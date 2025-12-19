@@ -1,92 +1,47 @@
 # Panel Counterfactual Estimators for Policy Shocks under Latent Trends
+
 **Causal ML Final Project**
 
-This project is a **simulation-based power analysis** comparing modern panel causal estimators under **latent interactive trends** (violations of parallel trends). The motivating application is the study of the effect of the **Italy–Libya MoU** on migrants mortality in the Central Mediterranean and the operational shift around **May 2017**, but the goal is methodological: *when do different panel counterfactual estimators work well?*
+Submitted by: Giorgio Coppola  
 
-## Research question
-> In a spatial unit×month panel, how do TWFE, Matrix Completion, Synthetic DiD, and TROP compare in bias, coverage, RMSE, and power when the data exhibit latent factor trends and sparse outcomes?
+## Writeup
 
-## Setup 
-- **Units:** 1°×1° grid cells in the Central Mediterranean (56 cells, inspired by Zambiasi and Albarosa, 2025)
-- **Time:** months (Apr 2015–Feb 2018)
-- **Outcome (primary):** `Y_any = 1{deaths_observed > 0}` (deadly-event indicator per cell-month)
-- **Treatment exposure:** `near_libya = 1{distance_to_tripoli ≤ 200 km}`
-- **Post period:** `post_treat = 1{t ≥ May 2017}`
-- **Treatment indicator:** `D_it = near_libya_i × post_treat_t`
-- **Estimand:** ATT on `Y_any` for treated units in the post period
+📄 **Read the writeup [in PDF](writeup/writeup.pdf) or [in HTML](writeup/writeup.html)**
 
-## Methods compared
-- **TWFE** (baseline DiD with unit and time fixed effects)
-- **Matrix Completion (MC)** (low-rank imputation of the untreated counterfactual)
-- **Synthetic DiD (SDID)** (weights + DiD)
-- **TROP** (hybrid weighting + low-rank + TWFE; designed to be robust under certain misspecifications)
+## Overview
 
-## Calibration using real data
-The `R/run_analysis.R` will:
-1) aggregate incidents to the same **grid×month** panel (Central Mediterranean only),  
-2) compute the **pre-period target event rate** for `Y_any`,  
-3) **calibrate `baseline_mortality`** so the simulated pre-period `mean(Y_any)` matches the IOM data target, and  
-4) replace the default sinusoidal seasonality with **month-of-year multipliers** learned from IOM data.
+Simulation-based comparison of panel causal estimators under latent factor trends (violations of parallel trends). 
 
-## Repository structure
+**Research question:** How do TWFE, Matrix Completion, Synthetic DiD, and TROP compare in bias, coverage, and power when outcomes are sparse and units follow latent interactive trends?
 
-```
-causal_ml_project/
-├── R/
-│   ├── 00_setup.R         
-│   ├── 01_dgp.R           
-│   ├── 02_estimators.R    
-│   ├── 03_simulation.R    
-│   ├── 04_calibration.R   
-│   └── run_analysis.R     
-├── data/
-│   └── iom_mediterranean_2014_2020_synthetic.csv
-├── figures/
-│   ├── dgp_overview.pdf
-│   ├── power_curves.pdf
-│   └── main_results.pdf
-├── output/
-│   ├── power_summary.csv
-│   └── table1_main_results.csv
-├── writeup/
-│   └── writeup.qmd
-└── README.md
-```
+**Application context:** Italy–Libya MoU's effect on migrant mortality in the Central Mediterranean (May 2017 operational onset). The DGP is calibrated to match real IOM data patterns, but the goal is methodological.
 
-## Run instructions
-From the project root:
+**Setup:** 56 grid cells × 35 months, binary outcome (any deaths in cell-month), treatment = proximity to Libya × post-May 2017.
 
+## Reproduce
 ```r
-source("R/00_setup.R")
 source("R/run_analysis.R")
 ```
-
-Then render the writeup:
-
 ```bash
-quarto render writeup.qmd
+quarto render writeup/writeup.qmd
 ```
 
-Outputs are written to `figures/` and `output/`.
+## Repository structure
+```
+├── R/
+│   ├── 01_dgp.R           # Data generating process
+│   ├── 02_calibration.R   # Calibration from IOM data
+│   ├── 03_estimators.R    # TWFE, MC, SDID, TROP
+│   ├── 04_simulation.R    # Power and scenario analysis
+│   └── run_analysis.R     # Main script
+├── data/
+│   └── calibration_targets.rds
+├── figures/               # Output plots
+├── output/                # Summary tables
+└── writeup/
+    └── writeup.qmd        # Writeup in various formats
+```
 
-## Data and Reproducibility
+## Data
 
-This project separates **calibration** (requires real data) from **analysis** (fully reproducible).
-
-### How it works
-
-1. **Calibration** (run once, requires real IOM data):
-   - Reads `data/iom_mediterranean_2014_2020.csv` (private, not in repo)
-   - Computes summary statistics: target event rate, seasonality, baseline mortality
-   - Saves to `data/calibration_targets.rds`
-
-2. **Analysis** (reproducible by anyone):
-   - Reads `data/calibration_targets.rds` (included in repo)
-   - Runs simulations and estimators
-   - No access to raw IOM data needed
-
-The command `source("R/run_analysis.R")` uses the pre-computed calibration targets. 
-
-### Data source
-
-Real data from [IOM Missing Migrants Project](https://missingmigrants.iom.int/), 2014–2020.
+Analysis uses pre-computed calibration targets (`data/calibration_targets.rds`) derived from [IOM Missing Migrants Project](https://missingmigrants.iom.int/) data. These contain summary statistics only (event rates, seasonality indices)—no raw incident data. Fully reproducible without access to the original dataset.
