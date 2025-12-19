@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Real data files (not to be published)
+data/iom_mediterranean_2014_2020.csv
+data/med_aggregate_2014_2024.csv

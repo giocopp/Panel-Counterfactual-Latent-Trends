@@ -1,14 +1,14 @@
 # Panel Counterfactual Estimators for Policy Shocks under Latent Trends
-**Causal ML Final Project (simulation tutorial + reproducible code)**
+**Causal ML Final Project**
 
-This project is a **simulation-based power analysis** comparing modern panel causal estimators under **latent interactive trends** (violations of parallel trends). The motivating application is the **Italy–Libya MoU** and the operational shift around **May 2017**, but the goal is methodological: *when do different panel counterfactual estimators work well?*
+This project is a **simulation-based power analysis** comparing modern panel causal estimators under **latent interactive trends** (violations of parallel trends). The motivating application is the study of the effect of the **Italy–Libya MoU** on migrants mortality in the Central Mediterranean and the operational shift around **May 2017**, but the goal is methodological: *when do different panel counterfactual estimators work well?*
 
-## Research question (course project version)
+## Research question
 > In a spatial unit×month panel, how do TWFE, Matrix Completion, Synthetic DiD, and TROP compare in bias, coverage, RMSE, and power when the data exhibit latent factor trends and sparse outcomes?
 
 ## Setup 
-- **Units:** 1°×1° grid cells in the Central Mediterranean (56 cells by default)
-- **Time:** months (Apr 2015–Feb 2018 by default)
+- **Units:** 1°×1° grid cells in the Central Mediterranean (56 cells, inspired by Zambiasi and Albarosa, 2025)
+- **Time:** months (Apr 2015–Feb 2018)
 - **Outcome (primary):** `Y_any = 1{deaths_observed > 0}` (deadly-event indicator per cell-month)
 - **Treatment exposure:** `near_libya = 1{distance_to_tripoli ≤ 200 km}`
 - **Post period:** `post_treat = 1{t ≥ May 2017}`
@@ -25,8 +25,8 @@ This project is a **simulation-based power analysis** comparing modern panel cau
 The `R/run_analysis.R` will:
 1) aggregate incidents to the same **grid×month** panel (Central Mediterranean only),  
 2) compute the **pre-period target event rate** for `Y_any`,  
-3) **calibrate `baseline_mortality`** so the simulated pre-period `mean(Y_any)` matches the IOM target, and  
-4) replace the default sinusoidal seasonality with **month-of-year multipliers** learned from IOM.
+3) **calibrate `baseline_mortality`** so the simulated pre-period `mean(Y_any)` matches the IOM data target, and  
+4) replace the default sinusoidal seasonality with **month-of-year multipliers** learned from IOM data.
 
 ## Repository structure
 
@@ -40,6 +40,7 @@ causal_ml_project/
 │   ├── 04_calibration.R   
 │   └── run_analysis.R     
 ├── data/
+│   └── iom_mediterranean_2014_2020_synthetic.csv
 ├── figures/
 │   ├── dgp_overview.pdf
 │   ├── power_curves.pdf
@@ -67,3 +68,25 @@ quarto render writeup.qmd
 ```
 
 Outputs are written to `figures/` and `output/`.
+
+## Data and Reproducibility
+
+This project separates **calibration** (requires real data) from **analysis** (fully reproducible).
+
+### How it works
+
+1. **Calibration** (run once, requires real IOM data):
+   - Reads `data/iom_mediterranean_2014_2020.csv` (private, not in repo)
+   - Computes summary statistics: target event rate, seasonality, baseline mortality
+   - Saves to `data/calibration_targets.rds`
+
+2. **Analysis** (reproducible by anyone):
+   - Reads `data/calibration_targets.rds` (included in repo)
+   - Runs simulations and estimators
+   - No access to raw IOM data needed
+
+The command `source("R/run_analysis.R")` uses the pre-computed calibration targets. 
+
+### Data source
+
+Real data from [IOM Missing Migrants Project](https://missingmigrants.iom.int/), 2014–2020.
