@@ -20,6 +20,7 @@ Simulation-based comparison of panel causal estimators under latent factor trend
 
 ## Reproduce
 ```r
+source("R/00_setup.R")
 source("R/run_analysis.R")
 ```
 ```bash
@@ -29,6 +30,7 @@ quarto render writeup/writeup.qmd
 ## Repository structure
 ```
 ├── R/
+│   ├── 00_setup.R         # Prepare environment
 │   ├── 01_dgp.R           # Data generating process
 │   ├── 02_calibration.R   # Calibration from IOM data
 │   ├── 03_estimators.R    # TWFE, MC, SDID, TROP
