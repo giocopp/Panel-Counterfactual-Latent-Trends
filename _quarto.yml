@@ -1,0 +1,8 @@
+project:
+  type: default
+  render:
+    - writeup/writeup.qmd
+
+resources:
+  - figures/**
+  - output/**

@@ -1,5 +1,5 @@
 #' ============================================================================
-#' Data Generating Process (DGP): Zambiasi-style Spatial Panel
+#' Data Generating Process (DGP): Spatial Panel inspired by Zambiasi-Albarosa
 #'
 #' Creates a balanced unit×month panel inspired by spatial analyses of fatal
 #' incidents on the Central Mediterranean route.
@@ -30,12 +30,12 @@ suppressPackageStartupMessages({
 # =============================================================================
 
 generate_time_panel <- function(
-    start_date = "2015-04-01",
-    end_date   = "2018-02-01",
-    mou_date   = "2017-02-01",
-    treat_start = "2017-05-01",      # operational onset (patrol boats)
-    other_policy = "2017-07-01"      # e.g., NGO code of conduct
-    , seasonality_index = NULL  # optional 12-length vector (month multipliers)
+  start_date = "2015-04-01",
+  end_date = "2018-02-01",
+  mou_date = "2017-02-01",
+  treat_start = "2017-05-01", # operational onset (patrol boats)
+  other_policy = "2017-07-01" # e.g., NGO code of conduct
+  , seasonality_index = NULL # optional 12-length vector (month multipliers)
 ) {
   dates <- seq(as.Date(start_date), as.Date(end_date), by = "month")
   mou_date <- as.Date(mou_date)
@@ -46,7 +46,7 @@ generate_time_panel <- function(
     date = dates,
     year = year(dates),
     month = month(dates),
-    time_id = seq_along(dates),  # avoid dplyr::n()/row_number() outside verbs
+    time_id = seq_along(dates), # avoid dplyr::n()/row_number() outside verbs
     # Policy indicators
     post_mou = as.integer(dates >= mou_date),
     post_treat = as.integer(dates >= treat_start),
@@ -68,10 +68,10 @@ generate_time_panel <- function(
 # =============================================================================
 
 generate_grid <- function(
-    lat_range = c(31, 38),
-    lon_range = c(10, 18),
-    resolution = 1,
-    near_cutoff_km = 200
+  lat_range = c(31, 38),
+  lon_range = c(10, 18),
+  resolution = 1,
+  near_cutoff_km = 200
 ) {
   # Reference point
   tripoli <- c(lon = 13.19, lat = 32.89)
@@ -103,24 +103,24 @@ generate_grid <- function(
 # =============================================================================
 
 generate_panel_data <- function(
-    grid = NULL,
-    time_panel = NULL,
-    # Treatment effect (log-odds shift in per-attempt mortality when "active")
-    delta = 0.6,
-    # Baselines
-    baseline_attempts = 60,
-    baseline_mortality = 0.02,
-    # Latent structure (interactive FE)
-    n_factors = 2,
-    factor_strength = 0.5,
-    # Measurement issues
-    underreporting_rate = 0.0,
-    coord_missing_rate = 0.0,
-    # Effect timing
-    short_lived = FALSE,
-    # Grid options
-    near_cutoff_km = 200,
-    seed = 42
+  grid = NULL,
+  time_panel = NULL,
+  # Treatment effect (log-odds shift in per-attempt mortality when "active")
+  delta = 0.6,
+  # Baselines
+  baseline_attempts = 60,
+  baseline_mortality = 0.02,
+  # Latent structure (interactive FE)
+  n_factors = 2,
+  factor_strength = 0.5,
+  # Measurement issues
+  underreporting_rate = 0.0,
+  coord_missing_rate = 0.0,
+  # Effect timing
+  short_lived = FALSE,
+  # Grid options
+  near_cutoff_km = 200,
+  seed = 42
 ) {
   set.seed(seed)
 
@@ -135,8 +135,8 @@ generate_panel_data <- function(
   lambda_t <- rnorm(T_max, mean = 0, sd = 0.15)
 
   loadings <- matrix(rnorm(N * n_factors), nrow = N, ncol = n_factors)
-  factors  <- matrix(rnorm(T_max * n_factors), nrow = T_max, ncol = n_factors)
-  interactive <- loadings %*% t(factors)  # N × T
+  factors <- matrix(rnorm(T_max * n_factors), nrow = T_max, ncol = n_factors)
+  interactive <- loadings %*% t(factors) # N × T
 
   # Balanced panel
   panel <- tidyr::crossing(grid, time_panel) %>%
@@ -167,7 +167,6 @@ generate_panel_data <- function(
         0.25 * alpha + 0.20 * lambda + 0.30 * lf +
         0.15 * seasonal +
         (-0.015) * dist_scaled,
-
       p0 = plogis(logit_base),
       p1 = plogis(logit_base + delta * effect_active)
     )
@@ -178,14 +177,11 @@ generate_panel_data <- function(
       deaths_true = rbinom(n(), size = attempts, prob = p1),
       deaths_observed = rbinom(n(), size = deaths_true, prob = 1 - underreporting_rate),
       mortality_rate = ifelse(attempts > 0, deaths_observed / attempts, 0),
-
       coord_missing = rbinom(n(), 1, coord_missing_rate),
       lat_center = ifelse(coord_missing == 1, NA_real_, lat_center),
       lon_center = ifelse(coord_missing == 1, NA_real_, lon_center),
-
       Y_any = as.integer(deaths_observed > 0),
       Y_ihs = asinh(deaths_observed),
-
       EY_any_0 = 1 - (1 - p0)^attempts,
       EY_any_1 = 1 - (1 - p1)^attempts,
       EY_any_obs = 1 - (1 - p1)^attempts
@@ -209,8 +205,10 @@ compute_true_estimands <- function(panel, outcome_col = "Y_any") {
     att <- mean(panel$EY_any_1[treated_post] - panel$EY_any_0[treated_post], na.rm = TRUE)
 
     tmp <- panel %>%
-      mutate(group = ifelse(near_libya == 1, "near", "far"),
-             period = ifelse(post_treat == 1, "post", "pre")) %>%
+      mutate(
+        group = ifelse(near_libya == 1, "near", "far"),
+        period = ifelse(post_treat == 1, "post", "pre")
+      ) %>%
       group_by(group, period) %>%
       summarise(m = mean(EY_any_obs, na.rm = TRUE), .groups = "drop") %>%
       tidyr::pivot_wider(names_from = period, values_from = m)
@@ -223,8 +221,10 @@ compute_true_estimands <- function(panel, outcome_col = "Y_any") {
 
   Y <- panel[[outcome_col]]
   tmp <- panel %>%
-    mutate(group = ifelse(near_libya == 1, "near", "far"),
-           period = ifelse(post_treat == 1, "post", "pre")) %>%
+    mutate(
+      group = ifelse(near_libya == 1, "near", "far"),
+      period = ifelse(post_treat == 1, "post", "pre")
+    ) %>%
     group_by(group, period) %>%
     summarise(m = mean(Y, na.rm = TRUE), .groups = "drop") %>%
     tidyr::pivot_wider(names_from = period, values_from = m)

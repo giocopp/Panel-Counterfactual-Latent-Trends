@@ -12,6 +12,12 @@
 #'   - figures/coverage_curve.pdf
 #' ============================================================================
 
+if (requireNamespace("furrr", quietly = TRUE)) {
+  library(furrr)
+  plan(multisession, workers = parallel::detectCores() - 1)
+  cat("Parallel processing enabled:", parallel::detectCores() - 1, "workers\n")
+}
+
 cat("Loading packages...\n")
 suppressPackageStartupMessages({
   library(tidyverse)
@@ -74,7 +80,7 @@ example_data <- generate_panel_data(
   delta = 0.6,
   factor_strength = 0.5,
   underreporting_rate = 0.0,
-  short_lived = FALSE,  # Persistent effect for interpretable example
+  short_lived = FALSE,  # Persistent effects are easier to detect
   seed = 123
 )
 
@@ -114,7 +120,7 @@ power_results <- run_power_analysis(
   base_params = list(
     factor_strength = 0.5,
     underreporting_rate = 0.0,
-    short_lived = FALSE  # Changed from TRUE - persistent effect for interpretable power curves
+    short_lived = FALSE
   )
 )
 
@@ -138,7 +144,7 @@ cat("PART 4: Scenario analysis\n")
 cat("============================================================\n\n")
 
 scenario_results <- run_scenario_analysis(
-  n_sims = 150,
+  n_sims = 100,
   estimators = c("twfe", "mc", "sdid", "trop"),
   outcome_col = OUTCOME_COL
 )

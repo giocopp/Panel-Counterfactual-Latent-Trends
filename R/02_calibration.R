@@ -1,5 +1,5 @@
 #' ============================================================================
-#' Calibration using IOM-like incident data (Central Mediterranean)
+#' Calibration using IOM MM data (for Central Mediterranean)
 #'
 #' Purpose: set DGP baselines to resemble the sparsity + seasonality observed in
 #'          IOM Missing Migrants data aggregated to the same grid×month panel.
@@ -107,19 +107,19 @@ compute_calibration_targets <- function(iom_panel, treat_start = "2017-05-01") {
 # Calibrate baseline_mortality so that simulated pre-period mean(Y_any) matches IOM target.
 # We do this with a small uniroot search on baseline_mortality.
 calibrate_baseline_mortality <- function(
-    target_event_rate,
-    grid,
-    time_panel,
-    baseline_attempts = 60,
-    factor_strength = 0.5,
-    near_cutoff_km = 200,
-    seed = 123
+  target_event_rate,
+  grid,
+  time_panel,
+  baseline_attempts = 60,
+  factor_strength = 0.5,
+  near_cutoff_km = 200,
+  seed = 123
 ) {
   obj <- function(bm) {
     sim <- generate_panel_data(
       grid = grid,
       time_panel = time_panel,
-      delta = 0.0,                   # no treatment effect during calibration
+      delta = 0.0, # no treatment effect during calibration
       baseline_attempts = baseline_attempts,
       baseline_mortality = bm,
       factor_strength = factor_strength,
@@ -155,15 +155,15 @@ calibrate_baseline_mortality <- function(
 
 # Main entry point used by run_analysis.R
 calibrate_from_iom <- function(
-    iom_path = NULL,
-    lat_range = c(31, 38),
-    lon_range = c(10, 18),
-    start_date = "2015-04-01",
-    end_date = "2018-02-01",
-    treat_start = "2017-05-01",
-    baseline_attempts = 60,
-    factor_strength = 0.5,
-    near_cutoff_km = 200
+  iom_path = NULL,
+  lat_range = c(31, 38),
+  lon_range = c(10, 18),
+  start_date = "2015-04-01",
+  end_date = "2018-02-01",
+  treat_start = "2017-05-01",
+  baseline_attempts = 60,
+  factor_strength = 0.5,
+  near_cutoff_km = 200
 ) {
   if (is.null(iom_path)) iom_path <- find_iom_file()
   if (is.null(iom_path)) {
@@ -202,7 +202,7 @@ calibrate_from_iom <- function(
     factor_strength = factor_strength,
     near_cutoff_km = near_cutoff_km
   )
-  
+
   result <- list(
     iom_path = iom_path,
     target_event_rate = targets$target_event_rate,
@@ -210,9 +210,9 @@ calibrate_from_iom <- function(
     baseline_mortality = bm$baseline_mortality,
     calibration_method = bm$method
   )
-  
+
   saveRDS(result, "data/calibration_targets.rds")
   message("Calibration saved to data/calibration_targets.rds")
-  
+
   result
 }
