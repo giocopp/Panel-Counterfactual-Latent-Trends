@@ -500,29 +500,32 @@ estimate_sdid <- function(panel, outcome_col = "Y_any", se_method = "jackknife",
 
   # SE estimation using synthdid_se()
   # Methods: "jackknife" (conservative), "bootstrap", "placebo"
-  se <- tryCatch({
-    se_val <- synthdid::synthdid_se(fit, method = se_method)
-    as.numeric(se_val)
-  }, error = function(e) {
-    # Fallback: manual bootstrap over control units
-    message("SynthDiD SE failed, using manual bootstrap: ", e$message)
-    att_boot <- rep(NA_real_, n_boot)
-    for (b in seq_len(n_boot)) {
-      # Sample control units with replacement
-      ctrl_sample <- sample(1:N0, N0, replace = TRUE)
-      # Keep all treated units
-      Y_b <- Y_reordered[c(ctrl_sample, (N0 + 1):N), ]
+  se <- tryCatch(
+    {
+      se_val <- synthdid::synthdid_se(fit, method = se_method)
+      as.numeric(se_val)
+    },
+    error = function(e) {
+      # Fallback: manual bootstrap over control units
+      message("SynthDiD SE failed, using manual bootstrap: ", e$message)
+      att_boot <- rep(NA_real_, n_boot)
+      for (b in seq_len(n_boot)) {
+        # Sample control units with replacement
+        ctrl_sample <- sample(1:N0, N0, replace = TRUE)
+        # Keep all treated units
+        Y_b <- Y_reordered[c(ctrl_sample, (N0 + 1):N), ]
 
-      fit_b <- tryCatch(
-        synthdid::synthdid_estimate(Y_b, N0, T0),
-        error = function(e) NULL
-      )
-      if (!is.null(fit_b)) {
-        att_boot[b] <- as.numeric(fit_b)
+        fit_b <- tryCatch(
+          synthdid::synthdid_estimate(Y_b, N0, T0),
+          error = function(e) NULL
+        )
+        if (!is.null(fit_b)) {
+          att_boot[b] <- as.numeric(fit_b)
+        }
       }
+      sd(att_boot, na.rm = TRUE)
     }
-    sd(att_boot, na.rm = TRUE)
-  })
+  )
 
   if (is.na(se) || se == 0) se <- abs(att) * 0.1 + 0.001
 
@@ -548,7 +551,7 @@ estimate_sdid <- function(panel, outcome_col = "Y_any", se_method = "jackknife",
 # =============================================================================
 
 run_all_estimators <- function(panel, outcome_col = "Y_any", true_att = NULL,
-                                estimators = c("twfe", "mc", "trop", "sdid")) {
+                               estimators = c("twfe", "mc", "trop", "sdid")) {
   results <- list()
 
   if ("twfe" %in% estimators) {

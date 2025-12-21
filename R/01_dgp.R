@@ -121,7 +121,6 @@ generate_panel_data <- function(
   factor_strength = 0.5,
   # NEW: Correlation between loadings and treatment assignment
   # When > 0, near-Libya units have systematically different loadings,
-
   # violating parallel trends and biasing TWFE
   loading_correlation = 0.5,
   # Measurement issues
@@ -149,23 +148,23 @@ generate_panel_data <- function(
   # This creates correlation between loadings and treatment assignment,
   # which violates parallel trends and biases TWFE
   loadings <- matrix(rnorm(N * n_factors), nrow = N, ncol = n_factors)
-  
+
   # Add systematic component for treated (near-Libya) units
   # The shift is in the same direction for all factors, creating differential trends
   near_libya_vec <- grid$near_libya
   for (k in 1:n_factors) {
     loadings[near_libya_vec == 1, k] <- loadings[near_libya_vec == 1, k] + loading_correlation
   }
-  
+
   factors <- matrix(rnorm(T_max * n_factors), nrow = T_max, ncol = n_factors)
-  
+
   # Make factors have a trend component (not just noise)
   # This ensures the differential loadings translate to differential trends
   for (k in 1:n_factors) {
     trend <- seq(-1, 1, length.out = T_max) * 0.5
-    factors[, k] <- factors[, k] + trend * ((-1)^k)  # Alternating trend directions
+    factors[, k] <- factors[, k] + trend * ((-1)^k) # Alternating trend directions
   }
-  
+
   interactive <- loadings %*% t(factors) # N × T
 
   # Balanced panel

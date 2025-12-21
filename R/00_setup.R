@@ -15,7 +15,7 @@ install_packages <- function() {
   optional <- c(
     "furrr",
     "progressr",
-    "synthdid"  # Added for Synthetic DiD
+    "synthdid" # Added for Synthetic DiD
   )
 
   cat("Installing required packages...\n")
@@ -31,12 +31,15 @@ install_packages <- function() {
   cat("\nInstalling optional packages...\n")
   for (pkg in optional) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
-      tryCatch({
-        install.packages(pkg, dependencies = TRUE)
-        cat("  ✓", pkg, "\n")
-      }, error = function(e) {
-        cat("  ✗", pkg, "(failed:", e$message, ")\n")
-      })
+      tryCatch(
+        {
+          install.packages(pkg, dependencies = TRUE)
+          cat("  ✓", pkg, "\n")
+        },
+        error = function(e) {
+          cat("  ✗", pkg, "(failed:", e$message, ")\n")
+        }
+      )
     } else {
       cat("  ✓", pkg, "\n")
     }
@@ -65,7 +68,7 @@ panel <- generate_panel_data(
   time_panel = time_panel,
   delta = 0.6,
   factor_strength = 0.5,
-  loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
+  loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
   short_lived = TRUE,
   seed = 1
 )

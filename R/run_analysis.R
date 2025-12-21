@@ -97,7 +97,7 @@ example_data <- generate_panel_data(
   baseline_mortality = if (!is.null(calibration)) calibration$baseline_mortality else 0.02,
   delta = 0.6,
   factor_strength = 0.5,
-  loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
+  loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
   underreporting_rate = 0.0,
   short_lived = FALSE, # Persistent effects are easier to detect
   seed = 123
@@ -143,7 +143,7 @@ power_results <- run_power_analysis(
   outcome_col = OUTCOME_COL,
   base_params = list(
     factor_strength = 0.5,
-    loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
+    loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
     underreporting_rate = 0.0,
     short_lived = FALSE
   )
