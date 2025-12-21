@@ -14,7 +14,8 @@ install_packages <- function() {
 
   optional <- c(
     "furrr",
-    "progressr"
+    "progressr",
+    "synthdid"  # Added for Synthetic DiD
   )
 
   cat("Installing required packages...\n")
@@ -25,37 +26,20 @@ install_packages <- function() {
     cat("  ✓", pkg, "\n")
   }
 
-  # Ensure remotes is available
-  if (!requireNamespace("remotes", quietly = TRUE)) {
-    install.packages("remotes")
-  }
-
-  # synthdid from GitHub
-  cat("\nInstalling synthdid from GitHub...\n")
-  if (!requireNamespace("synthdid", quietly = TRUE)) {
-    tryCatch(
-      {
-        remotes::install_github("synth-inference/synthdid")
-        cat("  ✓ synthdid\n")
-      },
-      error = function(e) {
-        cat("  ✗ synthdid failed - will use custom implementation\n")
-      }
-    )
-  } else {
-    cat("  ✓ synthdid (already installed)\n")
-  }
-
-  # Skip MCPanel - won't compile on modern macOS
-  cat("\nNote: MCPanel skipped (C++ compilation issues on macOS).\n")
-  cat("      Using custom matrix completion implementation.\n")
+  cat("\nNote: Using custom implementations for Matrix Completion and TROP.\n")
 
   cat("\nInstalling optional packages...\n")
   for (pkg in optional) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
-      install.packages(pkg, dependencies = TRUE)
+      tryCatch({
+        install.packages(pkg, dependencies = TRUE)
+        cat("  ✓", pkg, "\n")
+      }, error = function(e) {
+        cat("  ✗", pkg, "(failed:", e$message, ")\n")
+      })
+    } else {
+      cat("  ✓", pkg, "\n")
     }
-    cat("  ✓", pkg, "\n")
   }
 
   cat("\nDone!\n\n")
@@ -81,6 +65,7 @@ panel <- generate_panel_data(
   time_panel = time_panel,
   delta = 0.6,
   factor_strength = 0.5,
+  loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
   short_lived = TRUE,
   seed = 1
 )
@@ -103,19 +88,32 @@ cat(
   "(bias:", round(mc_res$estimate - true$att, 4), ")\n"
 )
 
-sdid_res <- estimate_sdid(panel, outcome_col = "Y_any")
-cat(
-  "  ✓ SDID estimate:", round(sdid_res$estimate, 4),
-  "(bias:", round(sdid_res$estimate - true$att, 4), ")\n"
-)
-
 trop_res <- estimate_trop(panel, outcome_col = "Y_any")
 cat(
   "  ✓ TROP estimate:", round(trop_res$estimate, 4),
-  "(bias:", round(trop_res$estimate - true$att, 4), ")\n\n"
+  "(bias:", round(trop_res$estimate - true$att, 4), ")\n"
 )
 
-cat("True ATT:", round(true$att, 4), "\n\n")
+# Test SynthDiD if available
+if (exists("SYNTHDID_AVAILABLE") && SYNTHDID_AVAILABLE) {
+  sdid_res <- tryCatch(
+    estimate_sdid(panel, outcome_col = "Y_any"),
+    error = function(e) {
+      cat("  ✗ SynthDiD failed:", e$message, "\n")
+      NULL
+    }
+  )
+  if (!is.null(sdid_res) && !is.na(sdid_res$estimate)) {
+    cat(
+      "  ✓ SynthDiD estimate:", round(sdid_res$estimate, 4),
+      "(bias:", round(sdid_res$estimate - true$att, 4), ")\n"
+    )
+  }
+} else {
+  cat("  - SynthDiD: package not installed (optional)\n")
+}
+
+cat("\nTrue ATT:", round(true$att, 4), "\n\n")
 
 cat(paste(rep("=", 50), collapse = ""), "\n")
 cat("All tests passed! Ready to run analysis.\n")

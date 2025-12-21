@@ -4,6 +4,12 @@
 #' Theme: Panel counterfactual estimators for policy shocks under latent trends
 #' Application-motivated DGP: Italy–Libya MoU (May 2017 operational onset)
 #'
+#' Estimators compared:
+#'   - TWFE: Two-way fixed effects (baseline)
+#'   - Matrix Completion: Low-rank imputation (Athey et al. 2021)
+#'   - TROP: Triply robust panel estimator (Athey et al. 2025)
+#'   - SynthDiD: Synthetic Difference-in-Differences (Arkhangelsky et al. 2021)
+#'
 #' Outputs used by writeup.qmd:
 #'   - output/power_summary.csv
 #'   - output/scenario_summary.csv
@@ -37,10 +43,20 @@ dir.create("figures", showWarnings = FALSE)
 dir.create("output", showWarnings = FALSE)
 
 OUTCOME_COL <- "Y_any"
-START_DATE  <- "2015-04-01"
-END_DATE    <- "2018-02-01"
+START_DATE <- "2015-04-01"
+END_DATE <- "2018-02-01"
 TREAT_START <- "2017-05-01"
 NEAR_CUTOFF <- 200
+
+# Determine which estimators to use
+ESTIMATORS <- c("twfe", "mc", "trop")
+if (exists("SYNTHDID_AVAILABLE") && SYNTHDID_AVAILABLE) {
+  ESTIMATORS <- c(ESTIMATORS, "sdid")
+  cat("SynthDiD available: YES\n")
+} else {
+  cat("SynthDiD available: NO (install synthdid package to enable)\n")
+}
+cat("Estimators:", paste(ESTIMATORS, collapse = ", "), "\n\n")
 
 # =============================================================================
 # PART 0: LOAD CALIBRATION FROM SAVED FILE
@@ -52,8 +68,10 @@ if (file.exists(calibration_path)) {
   calibration <- readRDS(calibration_path)
   cat("\nCalibration loaded from:", calibration_path, "\n")
   cat("  Target pre-period event rate (Y_any):", round(calibration$target_event_rate, 4), "\n")
-  cat("  Calibrated baseline_mortality:", signif(calibration$baseline_mortality, 4),
-      "(", calibration$calibration_method, ")\n\n")
+  cat(
+    "  Calibrated baseline_mortality:", signif(calibration$baseline_mortality, 4),
+    "(", calibration$calibration_method, ")\n\n"
+  )
 } else {
   cat("\nNo calibration file found at", calibration_path, "\n")
   cat("Using default DGP baselines.\n")
@@ -79,8 +97,9 @@ example_data <- generate_panel_data(
   baseline_mortality = if (!is.null(calibration)) calibration$baseline_mortality else 0.02,
   delta = 0.6,
   factor_strength = 0.5,
+  loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
   underreporting_rate = 0.0,
-  short_lived = FALSE,  # Persistent effects are easier to detect
+  short_lived = FALSE, # Persistent effects are easier to detect
   seed = 123
 )
 
@@ -102,7 +121,12 @@ cat("\n============================================================\n")
 cat("PART 2: One-dataset estimation example\n")
 cat("============================================================\n\n")
 
-example_results <- run_all_estimators(example_data, outcome_col = OUTCOME_COL, true_att = true$att)
+example_results <- run_all_estimators(
+  example_data,
+  outcome_col = OUTCOME_COL,
+  true_att = true$att,
+  estimators = ESTIMATORS
+)
 print(example_results %>% select(method, estimate, se, true_att, bias, p_value))
 write_csv(example_results, "output/example_estimates.csv")
 
@@ -115,10 +139,11 @@ power_results <- run_power_analysis(
   seasonality_index = if (!is.null(calibration)) calibration$seasonality_index else NULL,
   delta_values = c(0, 0.2, 0.4, 0.6, 0.8),
   n_sims = 200,
-  estimators = c("twfe", "mc", "sdid", "trop"),
+  estimators = ESTIMATORS,
   outcome_col = OUTCOME_COL,
   base_params = list(
     factor_strength = 0.5,
+    loading_correlation = 0.5,  # Correlated loadings -> violates parallel trends
     underreporting_rate = 0.0,
     short_lived = FALSE
   )
@@ -145,7 +170,7 @@ cat("============================================================\n\n")
 
 scenario_results <- run_scenario_analysis(
   n_sims = 100,
-  estimators = c("twfe", "mc", "sdid", "trop"),
+  estimators = ESTIMATORS,
   outcome_col = OUTCOME_COL
 )
 

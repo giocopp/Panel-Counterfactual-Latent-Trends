@@ -13,6 +13,12 @@
 #'   - underreporting / measurement error
 #'   - policy shock with stronger exposure for Libya-proximate cells
 #'
+#' IMPORTANT: The `loading_correlation` parameter controls whether factor
+#' loadings are correlated with treatment assignment (near_libya). When > 0,
+#' treated units have systematically different loadings, violating parallel
+#' trends and biasing TWFE. This is the key mechanism that makes robust
+#' estimators (MC, TROP) valuable.
+#'
 #' Primary outcome for estimator comparisons:
 #'   Y_any = 1{ deaths_observed > 0 }  (cell-month deadly-event indicator)
 #' Secondary outcome (robustness):
@@ -113,6 +119,11 @@ generate_panel_data <- function(
   # Latent structure (interactive FE)
   n_factors = 2,
   factor_strength = 0.5,
+  # NEW: Correlation between loadings and treatment assignment
+  # When > 0, near-Libya units have systematically different loadings,
+
+  # violating parallel trends and biasing TWFE
+  loading_correlation = 0.5,
   # Measurement issues
   underreporting_rate = 0.0,
   coord_missing_rate = 0.0,
@@ -134,8 +145,27 @@ generate_panel_data <- function(
   alpha_i <- rnorm(N, mean = 0, sd = 0.2)
   lambda_t <- rnorm(T_max, mean = 0, sd = 0.15)
 
+  # Factor loadings: random component + systematic shift for near-Libya units
+  # This creates correlation between loadings and treatment assignment,
+  # which violates parallel trends and biases TWFE
   loadings <- matrix(rnorm(N * n_factors), nrow = N, ncol = n_factors)
+  
+  # Add systematic component for treated (near-Libya) units
+  # The shift is in the same direction for all factors, creating differential trends
+  near_libya_vec <- grid$near_libya
+  for (k in 1:n_factors) {
+    loadings[near_libya_vec == 1, k] <- loadings[near_libya_vec == 1, k] + loading_correlation
+  }
+  
   factors <- matrix(rnorm(T_max * n_factors), nrow = T_max, ncol = n_factors)
+  
+  # Make factors have a trend component (not just noise)
+  # This ensures the differential loadings translate to differential trends
+  for (k in 1:n_factors) {
+    trend <- seq(-1, 1, length.out = T_max) * 0.5
+    factors[, k] <- factors[, k] + trend * ((-1)^k)  # Alternating trend directions
+  }
+  
   interactive <- loadings %*% t(factors) # N × T
 
   # Balanced panel
@@ -241,10 +271,30 @@ compute_true_estimands <- function(panel, outcome_col = "Y_any") {
 
 dgp_scenarios <- function() {
   list(
-    "Parallel trends (no latent factors)" = list(delta = 0.6, factor_strength = 0.0, underreporting_rate = 0.0, short_lived = FALSE),
-    "Moderate latent trends"              = list(delta = 0.6, factor_strength = 0.5, underreporting_rate = 0.0, short_lived = FALSE),
-    "Strong latent trends"                = list(delta = 0.6, factor_strength = 0.9, underreporting_rate = 0.0, short_lived = FALSE),
-    "Strong latent + underreporting"      = list(delta = 0.6, factor_strength = 0.9, underreporting_rate = 0.3, short_lived = FALSE),
-    "Short-lived (May–June only)"         = list(delta = 0.6, factor_strength = 0.5, underreporting_rate = 0.0, short_lived = TRUE)
+    # Parallel trends: no latent factors OR loadings uncorrelated with treatment
+    "Parallel trends (no latent factors)" = list(
+      delta = 0.6, factor_strength = 0.0, loading_correlation = 0.0,
+      underreporting_rate = 0.0, short_lived = FALSE
+    ),
+    # Moderate violation: some latent structure correlated with treatment
+    "Moderate latent trends" = list(
+      delta = 0.6, factor_strength = 0.5, loading_correlation = 0.5,
+      underreporting_rate = 0.0, short_lived = FALSE
+    ),
+    # Strong violation: strong latent structure highly correlated with treatment
+    "Strong latent trends" = list(
+      delta = 0.6, factor_strength = 0.9, loading_correlation = 0.8,
+      underreporting_rate = 0.0, short_lived = FALSE
+    ),
+    # Strong violation + measurement error
+    "Strong latent + underreporting" = list(
+      delta = 0.6, factor_strength = 0.9, loading_correlation = 0.8,
+      underreporting_rate = 0.3, short_lived = FALSE
+    ),
+    # Short-lived effect (transient)
+    "Short-lived (May–June only)" = list(
+      delta = 0.6, factor_strength = 0.5, loading_correlation = 0.5,
+      underreporting_rate = 0.0, short_lived = TRUE
+    )
   )
 }
