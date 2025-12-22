@@ -19,7 +19,7 @@ Simulation comparing panel causal estimators under latent factor trends (violati
 
 **Application context:** Italy–Libya MoU's effect on migrant mortality in the Central Mediterranean (May 2017 operational onset). The DGP is calibrated to match real IOM data patterns, but the goal is methodological.
 
-**Setup:** 56 grid cells × 35 months, binary outcome (any deaths in cell-month), treatment = proximity to Libya × post-May 2017.
+**Setup:** 56 geographical grid cells × 35 months, binary outcome (any deaths in cell-month), treatment = proximity to Libya × post-May 2017.
 
 ## Reproduce Results  
 
@@ -28,6 +28,8 @@ To reproduce the analysis, run the following commands in R:
 source("R/00_setup.R")
 source("R/run_analysis.R")
 ```
+
+> **Note:** Full simulation may take from around 10 min to 1 h depending on your machine, with parallel computing.
 
 To render the writeup (from the project root):
 ```bash
@@ -46,7 +48,8 @@ quarto render writeup/writeup.qmd --to html
 │   ├── 04_simulation.R    # Power and scenario analysis
 │   └── run_analysis.R     # Main script
 ├── data/
-│   └── calibration_targets.rds 
+│   ├── dgp_anchor.rds 
+│   └── iom_grid_panel.rds 
 ├── figures/               # Output plots
 ├── output/                # Summary tables
 └── writeup/
@@ -66,6 +69,6 @@ These commands cannot be reproduced without access to the original data. Neverth
 
 ## Dependencies
 
-`tidyverse`, `fixest`, `Matrix`, `synthdid`, `patchwork`, `scales`, `furrr`, `progressr`
+`tidyverse`, `lubridate`, `fixest`, `fect`,  `Matrix`, `synthdid`, `patchwork`, `scales`, `furrr`, `progressr`.
 
 Install all dependencies running `source("R/00_setup.R")`.
