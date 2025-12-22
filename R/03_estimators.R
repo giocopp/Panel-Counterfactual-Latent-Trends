@@ -2,16 +2,19 @@
 #' Estimators: TWFE, Matrix Completion, TROP, Synthetic DiD
 #'
 #' Target estimand:
-#'   D_it = near_libya_i × post_treat_t
+#'   By default (treat_type = "post"):
+#'     D_it = near_libya_i × post_treat_t
+#'   For a short-lived effect window (treat_type = "window"):
+#'     D_it = near_libya_i × effect_window_t
 #'   ATT on a chosen outcome Y (default: Y_any)
 #'
 #' Implementation notes:
 #' ---------------------
 #' TWFE: Uses fixest::feols (standard, fast, reliable)
 #'
-#' Matrix Completion: Custom SVD-based implementation
-#'   - Reference: Athey et al. (2021) "Matrix Completion Methods for
-#'     Causal Panel Data Models"
+#' Matrix Completion:
+#'   - Uses fect::fect(method = "mc") (required; no custom fallback)
+#'   - Reference: Athey et al. (2021) "Matrix Completion Methods for Causal Panel Data Models"
 #'
 #' TROP: Custom implementation following Athey, Imbens, Qu & Viviano (2025)
 #'   - Triply robust: unit weights, time weights, regression adjustment
@@ -32,24 +35,66 @@ suppressPackageStartupMessages({
   library(Matrix)
 })
 
+# Load fect (for package-based Matrix Completion) if available
+FECT_AVAILABLE <- requireNamespace("fect", quietly = TRUE)
+if (FECT_AVAILABLE) {
+  suppressPackageStartupMessages(library(fect))
+}
+
 # Load synthdid if available
 SYNTHDID_AVAILABLE <- requireNamespace("synthdid", quietly = TRUE)
 if (SYNTHDID_AVAILABLE) {
   library(synthdid)
-  message("Using fixest for TWFE, synthdid for SDID, custom implementations for MC/TROP")
+  message("Using fixest for TWFE, fect for MC (if installed), synthdid for SDID, custom for TROP")
 } else {
-  message("Using fixest for TWFE, custom implementations for MC/TROP")
+  message("Using fixest for TWFE, fect for MC (if installed), custom for TROP")
   message("Note: synthdid package not installed. Run install.packages('synthdid') to enable SDID.")
+}
+
+if (!FECT_AVAILABLE) {
+  message("Note: fect package not installed. Matrix Completion (MC) is disabled. Install with: install.packages('fect')")
 }
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
 #' Prepare data for estimation
-prepare_estimation_data <- function(panel, outcome_col = "Y_any") {
+#'
+#' @param treat_type "post" for near×post_treat, "window" for near×effect_window
+#' @param trim_after_window If TRUE and treat_type=="window", drop periods after
+#'        the effect window (keeps only pre + window). This makes estimators like
+#'        SynthDiD well-defined for transient treatments.
+prepare_estimation_data <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = (match.arg(treat_type) == "window")
+) {
+  treat_type <- match.arg(treat_type)
   stopifnot(outcome_col %in% names(panel))
+
+  # Keep only pre + window months when we want a transient-treatment estimand.
+  if (treat_type == "window" && isTRUE(trim_after_window)) {
+    if (!("effect_window" %in% names(panel))) {
+      stop("treat_type='window' requires panel$effect_window (from generate_time_panel())")
+    }
+    panel <- panel %>%
+      filter(post_treat == 0 | effect_window == 1)
+  }
+
+  # Define the time-level 'post' used by estimators that split time into pre/post.
+  post_est <- if (treat_type == "post") {
+    panel$post_treat
+  } else {
+    if (!("effect_window" %in% names(panel))) {
+      stop("treat_type='window' requires panel$effect_window (from generate_time_panel())")
+    }
+    panel$effect_window
+  }
+
   panel %>%
     mutate(
-      D = near_libya * post_treat,
+      post_est = as.integer(post_est),
+      D = as.integer(near_libya * post_est),
       Y = .data[[outcome_col]]
     )
 }
@@ -58,8 +103,19 @@ prepare_estimation_data <- function(panel, outcome_col = "Y_any") {
 # TWFE (Two-Way Fixed Effects) - using fixest
 # =============================================================================
 
-estimate_twfe <- function(panel, outcome_col = "Y_any", cluster = "unit_id") {
-  data <- prepare_estimation_data(panel, outcome_col = outcome_col)
+estimate_twfe <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
+  cluster = "unit_id"
+) {
+  if (is.null(trim_after_window)) trim_after_window <- (match.arg(treat_type) == "window")
+  data <- prepare_estimation_data(panel,
+    outcome_col = outcome_col,
+    treat_type = treat_type,
+    trim_after_window = trim_after_window
+  )
   fit <- feols(Y ~ D | unit_id + time_id, data = data, cluster = cluster)
 
   ct <- as.data.frame(fixest::coeftable(fit))
@@ -82,88 +138,188 @@ estimate_twfe <- function(panel, outcome_col = "Y_any", cluster = "unit_id") {
 
 # =============================================================================
 # MATRIX COMPLETION - Athey et al. (2021)
+# Implement via fect package
 # =============================================================================
 
-estimate_mc <- function(panel, outcome_col = "Y_any", lambda = 1, max_rank = 3, n_boot = 50) {
-  data <- prepare_estimation_data(panel, outcome_col = outcome_col)
+# Helper: build a reasonable lambda grid around a baseline
+.build_lambda_grid <- function(lambda_base = 0.05, n = 10) {
+  base <- as.numeric(lambda_base)[1]
+  mult <- c(32, 16, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.0625)
+  grid <- base * mult
+  grid <- pmax(grid, 1e-4)
+  grid <- unique(grid)
+  head(grid, n)
+}
 
-  Y_wide <- data %>%
-    select(unit_id, time_id, Y) %>%
-    pivot_wider(names_from = time_id, values_from = Y) %>%
-    arrange(unit_id) %>%
-    select(-unit_id) %>%
-    as.matrix()
+# Matrix Completion via fect (assumes fect is installed + loaded)
+estimate_mc_fect <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
+  lambda = 0.05, # baseline; used to form a CV grid by default
+  n_boot = 50,
+  use_cv = TRUE, # default TRUE -> avoids MC collapsing to TWFE
+  k_cv = 5,
+  cv_nobs = 1,
+  parallel = FALSE,
+  seed = NULL,
+  quiet = TRUE
+) {
+  if (!FECT_AVAILABLE) stop("fect package not installed. Run install.packages('fect')")
+  if (is.null(trim_after_window)) trim_after_window <- (match.arg(treat_type) == "window")
 
-  D_wide <- data %>%
-    select(unit_id, time_id, D) %>%
-    pivot_wider(names_from = time_id, values_from = D) %>%
-    arrange(unit_id) %>%
-    select(-unit_id) %>%
-    as.matrix()
+  data <- prepare_estimation_data(
+    panel,
+    outcome_col = outcome_col,
+    treat_type = treat_type,
+    trim_after_window = trim_after_window
+  )
 
-  N <- nrow(Y_wide)
-  T_obs <- ncol(Y_wide)
+  df <- data %>%
+    select(unit_id, time_id, Y, D) %>%
+    mutate(
+      unit_id = as.integer(as.factor(unit_id)),
+      time_id = as.integer(as.factor(time_id)),
+      D = as.integer(D)
+    )
 
-  # Mask treated entries
-  Y_masked <- Y_wide
-  Y_masked[D_wide == 1] <- NA
-
-  # TWFE component
-  row_means <- rowMeans(Y_masked, na.rm = TRUE)
-  row_means[is.nan(row_means)] <- 0
-  col_means <- colMeans(Y_masked, na.rm = TRUE)
-  col_means[is.nan(col_means)] <- 0
-  grand_mean <- mean(Y_masked, na.rm = TRUE)
-  if (is.nan(grand_mean)) grand_mean <- 0
-
-  Y_twfe <- outer(row_means, rep(1, T_obs)) + outer(rep(1, N), col_means) - grand_mean
-
-  # Low-rank component via SVD
-  Y_resid <- Y_masked - Y_twfe
-  Y_resid[is.na(Y_resid)] <- 0
-
-  svd_fit <- svd(Y_resid)
-  d_thresh <- pmax(svd_fit$d - lambda, 0)
-  k <- min(max_rank, sum(d_thresh > 0))
-  if (k == 0) k <- 1
-
-  L_hat <- svd_fit$u[, 1:k, drop = FALSE] %*%
-    diag(d_thresh[1:k], nrow = k) %*%
-    t(svd_fit$v[, 1:k, drop = FALSE])
-
-  Y_completed <- Y_twfe + L_hat
-
-  # ATT estimate
-  treated_entries <- D_wide == 1
-  att <- mean(Y_wide[treated_entries] - Y_completed[treated_entries], na.rm = TRUE)
-
-  # Bootstrap SE
-  att_boot <- rep(NA_real_, n_boot)
-  for (b in seq_len(n_boot)) {
-    idx <- sample(seq_len(N), N, replace = TRUE)
-    Y_b <- Y_wide[idx, , drop = FALSE]
-    D_b <- D_wide[idx, , drop = FALSE]
-    Y_cf_b <- Y_completed[idx, , drop = FALSE]
-    treated_b <- D_b == 1
-    if (sum(treated_b) > 0) {
-      att_boot[b] <- mean(Y_b[treated_b] - Y_cf_b[treated_b], na.rm = TRUE)
-    }
+  # Choose lambda argument for fect:
+  # - if CV: pass a vector (grid) so fect returns lambda.cv / MSPE
+  # - if not CV: pass a single number
+  lambda_arg <- if (isTRUE(use_cv)) {
+    if (length(lambda) > 1) as.numeric(lambda) else .build_lambda_grid(lambda)
+  } else {
+    as.numeric(lambda)[1]
   }
-  se <- sd(att_boot, na.rm = TRUE)
+
+  run_fect_quiet <- function() {
+    if (!isTRUE(quiet)) {
+      return(
+        fect::fect(
+          Y ~ D,
+          data = df,
+          index = c("unit_id", "time_id"),
+          force = "two-way",
+          method = "mc",
+          lambda = lambda_arg,
+          nlambda = if (length(lambda_arg) > 1) length(lambda_arg) else 8,
+          CV = isTRUE(use_cv),
+          k = k_cv,
+          cv.nobs = cv_nobs,
+          cv.donut = 0,
+          se = TRUE,
+          vartype = "bootstrap",
+          nboots = n_boot,
+          proportion = 0,
+          parallel = parallel,
+          seed = seed
+        )
+      )
+    }
+
+    tf_out <- tempfile()
+    tf_msg <- tempfile()
+    con_out <- file(tf_out, open = "wt")
+    con_msg <- file(tf_msg, open = "wt")
+
+    sink(con_out, type = "output")
+    sink(con_msg, type = "message")
+    on.exit(
+      {
+        try(sink(type = "message"), silent = TRUE)
+        try(sink(type = "output"), silent = TRUE)
+        try(close(con_msg), silent = TRUE)
+        try(close(con_out), silent = TRUE)
+        unlink(c(tf_out, tf_msg))
+      },
+      add = TRUE
+    )
+
+    suppressWarnings(suppressMessages(
+      fect::fect(
+        Y ~ D,
+        data = df,
+        index = c("unit_id", "time_id"),
+        force = "two-way",
+        method = "mc",
+        lambda = lambda_arg,
+        nlambda = if (length(lambda_arg) > 1) length(lambda_arg) else 8,
+        CV = isTRUE(use_cv),
+        k = k_cv,
+        cv.nobs = cv_nobs,
+        cv.donut = 0,
+        se = TRUE,
+        vartype = "bootstrap",
+        nboots = n_boot,
+        proportion = 0,
+        parallel = parallel,
+        seed = seed
+      )
+    ))
+  }
+
+  fit <- run_fect_quiet()
+
+  # Extract ATT + bootstrap SE/CI
+  att <- as.numeric(fit$att.avg)
+
+  boot <- if (!is.null(fit$att.avg.boot)) as.numeric(fit$att.avg.boot) else NULL
+  se <- if (!is.null(boot)) sd(boot, na.rm = TRUE) else NA_real_
   if (is.na(se) || se == 0) se <- abs(att) * 0.1 + 0.001
 
+  alpha <- 0.05
+  if (!is.null(boot)) {
+    qs <- stats::quantile(boot, probs = c(alpha / 2, 1 - alpha / 2), na.rm = TRUE, names = FALSE)
+    ci_lower <- as.numeric(qs[1])
+    ci_upper <- as.numeric(qs[2])
+  } else {
+    ci_lower <- as.numeric(att - 1.96 * se)
+    ci_upper <- as.numeric(att + 1.96 * se)
+  }
+
   list(
-    method = "Matrix Completion",
+    method = "Matrix Completion (fect)",
     estimand = outcome_col,
     estimate = as.numeric(att),
     se = as.numeric(se),
-    ci_lower = as.numeric(att - 1.96 * se),
-    ci_upper = as.numeric(att + 1.96 * se),
+    ci_lower = ci_lower,
+    ci_upper = ci_upper,
     p_value = as.numeric(2 * pnorm(-abs(att / se))),
-    n_obs = sum(!is.na(Y_wide)),
-    Y_completed = Y_completed
+    n_obs = nrow(df),
+    fit = fit,
+    diagnostics = list(
+      method_used = "mc",
+      factor_exists = if (!is.null(fit$validF)) isTRUE(fit$validF) else NA,
+      lambda_cv = if (!is.null(fit$lambda.cv)) fit$lambda.cv else NA,
+      MSPE = if (!is.null(fit$MSPE)) fit$MSPE else NA
+    )
   )
 }
+
+# Public MC entry point used elsewhere in your code
+estimate_mc <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
+  lambda = 0.05,
+  n_boot = 50,
+  quiet = TRUE,
+  ...
+) {
+  estimate_mc_fect(
+    panel = panel,
+    outcome_col = outcome_col,
+    treat_type = treat_type,
+    trim_after_window = trim_after_window,
+    lambda = lambda,
+    n_boot = n_boot,
+    quiet = quiet,
+    ...
+  )
+}
+
 
 # =============================================================================
 # TROP (Triply RObust Panel) - Athey, Imbens, Qu & Viviano (2025)
@@ -177,13 +333,20 @@ estimate_mc <- function(panel, outcome_col = "Y_any", lambda = 1, max_rank = 3, 
 estimate_trop <- function(
   panel,
   outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
   lambda_time = 0.2,
   lambda_unit = 0.2,
   lambda_nn = 0.1,
   max_rank = 3,
   n_boot = 100 # Increased for better SE estimation
 ) {
-  data <- prepare_estimation_data(panel, outcome_col = outcome_col)
+  if (is.null(trim_after_window)) trim_after_window <- (match.arg(treat_type) == "window")
+  data <- prepare_estimation_data(panel,
+    outcome_col = outcome_col,
+    treat_type = treat_type,
+    trim_after_window = trim_after_window
+  )
 
   Y_wide <- data %>%
     select(unit_id, time_id, Y) %>%
@@ -206,13 +369,13 @@ estimate_trop <- function(
     pull(treated)
 
   time_info <- data %>%
-    distinct(time_id, post_treat) %>%
+    distinct(time_id, post_est) %>%
     arrange(time_id)
 
   N <- nrow(Y_wide)
   T_obs <- ncol(Y_wide)
-  pre_idx <- which(time_info$post_treat == 0)
-  post_idx <- which(time_info$post_treat == 1)
+  pre_idx <- which(time_info$post_est == 0)
+  post_idx <- which(time_info$post_est == 1)
   treat_idx <- which(unit_treated == 1)
   ctrl_idx <- which(unit_treated == 0)
   T0 <- length(pre_idx)
@@ -431,18 +594,30 @@ estimate_trop <- function(
 # sparse outcomes. We use jackknife (more conservative) as the primary method.
 # =============================================================================
 
-estimate_sdid <- function(panel, outcome_col = "Y_any", se_method = "jackknife", n_boot = 200) {
+estimate_sdid <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
+  se_method = "jackknife",
+  n_boot = 200
+) {
   if (!SYNTHDID_AVAILABLE) {
     stop("synthdid package not installed. Run: install.packages('synthdid')")
   }
 
-  data <- prepare_estimation_data(panel, outcome_col = outcome_col)
+  if (is.null(trim_after_window)) trim_after_window <- (match.arg(treat_type) == "window")
+  data <- prepare_estimation_data(panel,
+    outcome_col = outcome_col,
+    treat_type = treat_type,
+    trim_after_window = trim_after_window
+  )
 
   # Get treatment timing info
   time_info <- data %>%
-    distinct(time_id, post_treat) %>%
+    distinct(time_id, post_est) %>%
     arrange(time_id)
-  T0 <- sum(time_info$post_treat == 0) # Number of pre-treatment periods
+  T0 <- sum(time_info$post_est == 0) # Number of pre-treatment periods
 
   # Build Y matrix: rows = units, cols = time periods
   Y_wide <- data %>%
@@ -550,13 +725,24 @@ estimate_sdid <- function(panel, outcome_col = "Y_any", se_method = "jackknife",
 # RUN ALL ESTIMATORS
 # =============================================================================
 
-run_all_estimators <- function(panel, outcome_col = "Y_any", true_att = NULL,
-                               estimators = c("twfe", "mc", "trop", "sdid")) {
+run_all_estimators <- function(
+  panel,
+  outcome_col = "Y_any",
+  true_att = NULL,
+  treat_type = c("post", "window"),
+  trim_after_window = NULL,
+  estimators = c("twfe", "mc", "trop", "sdid")
+) {
+  if (is.null(trim_after_window)) trim_after_window <- (match.arg(treat_type) == "window")
   results <- list()
 
   if ("twfe" %in% estimators) {
     results$twfe <- tryCatch(
-      estimate_twfe(panel, outcome_col = outcome_col),
+      estimate_twfe(panel,
+        outcome_col = outcome_col,
+        treat_type = treat_type,
+        trim_after_window = trim_after_window
+      ),
       error = function(e) {
         message("TWFE failed: ", e$message)
         list(
@@ -584,7 +770,11 @@ run_all_estimators <- function(panel, outcome_col = "Y_any", true_att = NULL,
 
   if ("trop" %in% estimators) {
     results$trop <- tryCatch(
-      estimate_trop(panel, outcome_col = outcome_col),
+      estimate_trop(panel,
+        outcome_col = outcome_col,
+        treat_type = treat_type,
+        trim_after_window = trim_after_window
+      ),
       error = function(e) {
         message("TROP failed: ", e$message)
         list(
@@ -598,7 +788,11 @@ run_all_estimators <- function(panel, outcome_col = "Y_any", true_att = NULL,
 
   if ("sdid" %in% estimators && SYNTHDID_AVAILABLE) {
     results$sdid <- tryCatch(
-      estimate_sdid(panel, outcome_col = outcome_col),
+      estimate_sdid(panel,
+        outcome_col = outcome_col,
+        treat_type = treat_type,
+        trim_after_window = trim_after_window
+      ),
       error = function(e) {
         message("SynthDiD failed: ", e$message)
         list(

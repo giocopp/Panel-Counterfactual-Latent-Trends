@@ -12,6 +12,8 @@
 library(tidyverse)
 library(lubridate)
 
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 find_iom_file <- function() {
   candidates <- c(
     "data/iom_mediterranean_2014_2020.csv",
@@ -215,4 +217,116 @@ calibrate_from_iom <- function(
   message("Calibration saved to data/calibration_targets.rds")
 
   result
+}
+
+# =============================================================================
+# Diagnostics helpers (figures for the writeup)
+# =============================================================================
+
+#' Create simple calibration diagnostic figures.
+#'
+#' Produces:
+#'   - figures/calibration_seasonality.pdf
+#'   - figures/calibration_pre_rate_check.pdf
+#'   - figures/calibration_iom_monthly_rate.pdf (if IOM file is available)
+make_calibration_figures <- function(
+  calibration,
+  grid,
+  time_panel,
+  treat_start = "2017-05-01",
+  fig_dir = "figures",
+  n_rep = 30,
+  seed = 202
+) {
+  dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
+  treat_start <- as.Date(treat_start)
+
+  # ---- 1) Seasonality multipliers (month-of-year)
+  if (!is.null(calibration$seasonality_index)) {
+    df_seas <- tibble(
+      month = 1:12,
+      index = as.numeric(calibration$seasonality_index),
+      month_lab = factor(month.abb[month], levels = month.abb)
+    )
+    p_seas <- ggplot(df_seas, aes(x = month_lab, y = index)) +
+      geom_col() +
+      geom_hline(yintercept = 1, linetype = "dashed") +
+      labs(
+        title = "Calibration: seasonality multipliers (pre-period)",
+        x = NULL,
+        y = "Multiplier (relative to mean)"
+      ) +
+      theme_minimal()
+    ggsave(
+      filename = file.path(fig_dir, "calibration_seasonality.pdf"),
+      plot = p_seas,
+      width = 7,
+      height = 3.8
+    )
+  }
+
+  # ---- 2) Pre-period event-rate sanity check under the calibrated baseline
+  # Run small repeated simulations with delta = 0 and compare mean(Y_any) pre.
+  set.seed(seed)
+  pre_means <- rep(NA_real_, n_rep)
+  for (r in seq_len(n_rep)) {
+    sim <- generate_panel_data(
+      grid = grid,
+      time_panel = time_panel,
+      delta = 0,
+      baseline_mortality = calibration$baseline_mortality,
+      short_lived = FALSE,
+      seed = seed + r
+    )
+    pre_means[r] <- mean(sim$Y_any[sim$date < treat_start], na.rm = TRUE)
+  }
+
+  df_check <- tibble(pre_mean = pre_means)
+  target <- calibration$target_event_rate %||% mean(pre_means, na.rm = TRUE)
+  p_check <- ggplot(df_check, aes(x = pre_mean)) +
+    geom_histogram(bins = 20) +
+    geom_vline(xintercept = target, linetype = "dashed") +
+    labs(
+      title = "Calibration: simulated pre-period event rate (delta = 0)",
+      subtitle = paste0("Dashed line = target ", signif(target, 3)),
+      x = "Mean(Y_any) in pre-period",
+      y = "Count"
+    ) +
+    theme_minimal()
+  ggsave(
+    filename = file.path(fig_dir, "calibration_pre_rate_check.pdf"),
+    plot = p_check,
+    width = 7,
+    height = 3.8
+  )
+
+  # ---- 3) If IOM raw file is present, plot monthly pre-period event rates
+  iom_path <- calibration$iom_path %||% find_iom_file()
+  if (!is.null(iom_path) && file.exists(iom_path)) {
+    iom <- read_iom_incidents(iom_path)
+    iom_panel <- build_iom_grid_panel(iom, grid, time_panel)
+    df_iom <- iom_panel %>%
+      filter(month_date < treat_start) %>%
+      group_by(month) %>%
+      summarise(rate = mean(Y_any), .groups = "drop") %>%
+      mutate(month_lab = factor(month.abb[month], levels = month.abb))
+
+    p_iom <- ggplot(df_iom, aes(x = month_lab, y = rate)) +
+      geom_col() +
+      labs(
+        title = "IOM (pre-period): monthly deadly-event probability",
+        x = NULL,
+        y = "Mean(Y_any)"
+      ) +
+      theme_minimal()
+
+    ggsave(
+      filename = file.path(fig_dir, "calibration_iom_monthly_rate.pdf"),
+      plot = p_iom,
+      width = 7,
+      height = 3.8
+    )
+  }
+
+  invisible(TRUE)
 }

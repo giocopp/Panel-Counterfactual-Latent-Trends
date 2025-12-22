@@ -12,7 +12,7 @@ format:
       - margin=1in
       - headheight=13pt
     fontsize: 10pt
-    linestretch: 1.1
+    linestretch: 1
     number-sections: true
     toc: false
     toc-depth: 2
@@ -74,15 +74,9 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Difference-in-differences (DiD) is the workhorse method for evaluating policy interventions in observational panel data. The canonical two-way fixed effects (TWFE) estimator relies on the parallel trends assumption: absent treatment, treated and control units would have followed parallel trajectories. However, this assumption often fails in practice when units exhibit complex, heterogeneous trends driven by unobserved time-varying factors.
+Difference-in-differences (DiD) is the classic method for evaluating policy interventions in observational panel data. The "canonical" estimator for many periods/multiple groups panels is the two-way fixed effects (TWFE), which relies on the parallel trends assumption: absent treatment, treated and control units would have followed parallel trajectories. However, this assumption often fails in practice when units exhibit complex or heterogeneous trends driven by unobserved time-varying factors. Recent methodological advances propose estimators robust to violations of parallel trends by modeling low-rank latent factor structures. This project compares four panel counterfactual estimators for a spatial policy shock: TWFE, Matrix Completion (MC), Synthetic Difference-in-Differences (SDID), and the Triply Robust Panel Estimator (TROP). Using Monte Carlo simulations calibrated to the Missing Migrants Project data for the Central Mediterranean from IOM, this project assesses each method's bias, coverage, and power under varying-strength interactive fixed effects. The motivating application is the Italy–Libya Memorandum of Understanding (which came into effect in February 2017), which led to the externalization of border control from the Italian Coast Guard to Libyan Coast Guard patrols, starting in May 2017. This agreement has been, and still is, at the center of the Italian and European political and academic debate, questioning its effectiveness, as well as its ethical premises, as externalization practices are often accompanied by the criminalization of NGO's SAR operations, and therefore they are associated with increased mortality and dangerousness of the migratory routes. If this policy landscape serves as a backdrop, the research question of this project is methodological: when latent trends conflict with parallel trends (as is often the case in these kinds of settings), which estimator should practitioners use?
 
-Recent methodological advances propose estimators robust to violations of parallel trends by modeling low-rank latent factor structures. This paper compares four panel counterfactual estimators in the context of a spatial policy shock: **TWFE** (baseline), **Matrix Completion** (MC), **Synthetic Difference-in-Differences** (SDID), and **Triply Robust Panel Estimator** (TROP). Using Monte Carlo simulations calibrated to migration incident data in the Central Mediterranean from IOM, this project assesses each method's bias, coverage, and power under interactive fixed effects of varying strength.
-
-The motivating application is the Italy–Libya Memorandum of Understanding (February 2017), which led to intensified Libyan Coast Guard patrols starting in May 2017. The research question is practical: **when latent trends violate parallel trends, which estimator should practitioners use?**
-
-# Background and Foundations
-
-## Parallel Trends and Interactive Fixed Effects
+# Background
 
 Consider a balanced panel with units $i = 1, \ldots, N$ observed over periods $t = 1, \ldots, T$. The potential outcomes framework defines $Y_{it}(0)$ and $Y_{it}(1)$ as outcomes under control and treatment. A binary treatment indicator $D_{it} \in \{0, 1\}$ determines the observed outcome:
 $$
@@ -93,196 +87,144 @@ In a canonical 2×2 DiD design, treatment turns on for a subset of units after p
 $$
 Y_{it} = \alpha_i + \lambda_t + \delta D_{it} + \varepsilon_{it},
 $$
-where $\alpha_i$ and $\lambda_t$ are unit and time fixed effects. This is unbiased for ATT if **parallel trends** holds: $E[Y_{it}(0) | i \in \text{treated}] - E[Y_{it}(0) | i \in \text{control}] = c$ (constant over time).
+where $\alpha_i$ and $\lambda_t$ are unit and time fixed effects. This is unbiased for ATT if parallel trends holds: $E[Y_{it}(0) | i \in \text{treated}] - E[Y_{it}(0) | i \in \text{control}] = c$ (constant over time).
 
-Parallel trends fails when units follow heterogeneous trends. A common generalization is the **interactive fixed effects** model (Bai 2009):
+Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model (Bai 2009):
 $$
 Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i' F_t + \varepsilon_{it},
 $$
-where $\lambda_i \in \mathbb{R}^K$ are unit-specific loadings and $F_t \in \mathbb{R}^K$ are common time factors. Critically, TWFE is biased when factor loadings $\lambda_i$ are **correlated with treatment assignment**---that is, when treated units have systematically different loadings than control units, creating differential trends.
-
-## Robust Estimators
+where $\lambda_i \in \mathbb{R}^K$ are unit-specific loadings and $F_t \in \mathbb{R}^K$ are common time factors. Critically, TWFE is biased when factor loadings $\lambda_i$ are correlated with treatment assignment, that is, when treated units have systematically different loadings than control units, creating differential trends.
 
 Recent work proposes estimators that accommodate latent trends:
 
-- **Matrix Completion (MC)**: Models the untreated potential outcome matrix $Y(0)$ as low-rank, using singular value decomposition (SVD) to impute counterfactuals for treated observations (Athey et al. 2021).
+- Matrix Completion (MC): Models the untreated potential outcome matrix $Y(0)$ as low-rank, using singular value decomposition (SVD) to impute counterfactuals for treated observations (Athey et al. 2021).
 
-- **Synthetic Difference-in-Differences (SDID)**: Constructs synthetic controls using pre-period matching, combining unit weights (to match treated units' pre-period means) with time weights (to emphasize recent pre-periods), then applies a DiD-style contrast (Arkhangelsky et al. 2021).
+- Synthetic Difference-in-Differences (SDID): Constructs synthetic controls using pre-period matching, combining unit weights (to match treated units' pre-period means) with time weights (to emphasize recent pre-periods), then applies a DiD-style contrast (Arkhangelsky et al. 2021).
 
-- **TROP (Triply Robust Panel Estimator)**: Combines unit weights, time weights, and regression adjustment. Consistent if *any one* of three conditions holds: unit weights balance loadings, time weights balance factors, or the regression adjustment is correctly specified (Athey et al. 2025).
+- Triply Robust Panel Estimator (TROP): Combines unit weights, time weights, and regression adjustment. Consistent if any one of three conditions holds: unit weights balance loadings, time weights balance factors, or the regression adjustment is correctly specified (Athey et al. 2025).
 
 # Methods
 
-## Data Generating Process
-
-I simulate a spatial panel of $N = 56$ grid cells (1° × 1° resolution) in the Central Mediterranean, observed monthly from April 2015 to February 2018 ($T = 35$). The treatment is defined as:
+A spatial panel of $N = 56$ grid cells (1° × 1° resolution) in the Central Mediterranean is simulated, observed monthly from April 2015 to February 2018 ($T = 35$). The treatment is defined as:
 $$
-D_{it} = \mathbb{1}\{\text{distance}_i \leq 200\text{ km from Tripoli}\} \times \mathbb{1}\{t \geq \text{May 2017}\}.
+D_{it} = 1\{\text{distance}_i \leq 200\text{ km from Tripoli}\} \times 1\{t \geq \text{May 2017}\}.
 $$
 
-The outcome $Y_{it}^{\text{any}} = \mathbb{1}\{\text{deaths observed in cell } i \text{, month } t > 0\}$ is a binary deadly-event indicator. Deaths are generated hierarchically:
-
-1. **Exposure**: Migration attempts $M_{it} \sim \text{Poisson}(\mu_{it})$, where $\mu_{it}$ includes seasonality and latent trends.
-2. **Mortality**: Each attempt has per-attempt mortality probability $p_{it}$ following a logistic model with interactive fixed effects.
-3. **Deaths**: $\text{Deaths}_{it} \sim \text{Binomial}(M_{it}, p_{it})$.
-
-The key DGP features are:
-
-```{r dgp-code, echo=TRUE, eval=FALSE}
-# Interactive fixed effects with CORRELATED loadings
-loadings <- matrix(rnorm(N * n_factors), nrow = N, ncol = n_factors)
-# Near-Libya units have systematically different loadings
-loadings[near_libya == 1, ] <- loadings[near_libya == 1, ] + loading_correlation
-
-factors  <- matrix(rnorm(T * n_factors), nrow = T, ncol = n_factors)
-interactive <- loadings %*% t(factors)
-
-# Treatment effect on log-odds scale
-p0 = plogis(logit_base + alpha_i + lambda_t + factor_strength * lf_it)
-p1 = plogis(logit_base + alpha_i + lambda_t + factor_strength * lf_it + delta)
-
-# Binary outcome (at least one death)
-Y_any = 1{deaths_observed > 0}
-```
-
-The DGP is calibrated to match pre-period deadly-event rates (~6.6%) from IOM Missing Migrants data. I vary `factor_strength` (0 = no latent factors, 0.5 = moderate, 0.9 = strong), `loading_correlation` (correlation between loadings and treatment assignment), and the treatment effect size `delta` on the log-odds scale.
-
-## Estimators
-
-All estimators target the ATT for the binary outcome $Y^{\text{any}}$, treating it as continuous (linear probability model) for comparability:
-
-1. **TWFE**: `feols(Y ~ D | unit_id + time_id)` with cluster-robust SEs.
-2. **Matrix Completion**: SVD-based imputation with nuclear norm regularization. Bootstrap SEs.
-3. **SDID**: Uses `synthdid` package with jackknife SEs for valid inference.
-4. **TROP**: Exponential kernel weights for units and time, low-rank regression adjustment. Bootstrap SEs.
+The outcome $Y_{it}^{\text{any}} = 1\{\text{deaths observed in cell } i \text{, month } t > 0\}$ is a binary deadly-event indicator. Deaths are generated hierarchically as (1) Exposure, where migration attempts $M_{it} \sim \text{Poisson}(\mu_{it})$, where $\mu_{it}$ includes seasonality and latent trends; (2) mortality, where each attempt has per-attempt mortality probability $p_{it}$ following a logistic model with interactive fixed effects, and (3) deaths, $\text{Deaths}_{it} \sim \text{Binomial}(M_{it}, p_{it})$.  The DGP is calibrated to match pre-period deadly-event rates (~6.6%) from IOM Missing Migrants data. I vary `factor_strength` (0 = no latent factors, 0.5 = moderate, 0.9 = strong), `loading_correlation` (correlation between loadings and treatment assignment), and the treatment effect size `delta` on the log-odds scale. All estimators target the ATT for the binary outcome $Y^{\text{any}}$, treating it as continuous (linear probability model) for comparability. TWFE uses `feols(Y ~ D | unit_id + time_id)` with cluster-robust SEs. Matrix Completion uses the `fect` package with SVD-based imputation and nuclear norm regularization, with bootstrap SEs. SynthDID uses the `synthdid` package with jackknife SEs for valid inference. TROP uses exponential kernel weights for units and time with low-rank regression adjustment, with bootstrap SEs.
 
 # Simulation Design
 
-I conduct two experiments:
+Two experiments are conducted:
 
-1. **Power analysis**: Fix `factor_strength = 0.5` and `loading_correlation = 0.5` (moderate latent trends correlated with treatment) and vary treatment effect $\delta \in \{0, 0.2, 0.4, 0.6, 0.8\}$. Run 200 replications per $\delta$ value.
+1. Power analysis: Fix `factor_strength = 0.5` and `loading_correlation = 0.5` (moderate latent trends correlated with treatment) and vary treatment effect $\delta \in \{0, 0.2, 0.4, 0.6, 0.8\}$. Run 200 replications per $\delta$ value.
 
-2. **Scenario analysis**: Fix $\delta = 0.6$ and vary DGP features (parallel trends, moderate/strong latent trends, underreporting, short-lived effect). Run 100 replications per scenario.
+2. Scenario analysis: Fix $\delta = 0.6$ and vary DGP features (parallel trends, moderate/strong latent trends, underreporting, short-lived effect). Run 100 replications per scenario.
 
 Performance metrics: bias, RMSE, 95% CI coverage (nominal target), and rejection rate (power/size at $\alpha = 0.05$).
 
 # Results
 
+## One-dataset estimation example
+
+@tbl-example-estimates reports estimates on the calibrated DGP for a single simulated dataset (balanced 56×35 panel). This “one draw” is useful to see what an applied analyst would face in practice, but it can be noisy when outcomes are sparse.
+
+```{r}
+#| label: tbl-example-estimates
+#| tbl-cap: 'One-dataset estimates (calibrated DGP; outcome $Y_{it} = 1\{\text{deaths}>0\}$).'
+#| echo: false
+library(tidyverse)
+
+ex <- readr::read_csv("../output/example_estimates.csv", show_col_types = FALSE)
+
+ex %>%
+  select(method, estimate, se, true_att, bias, p_value) %>%
+  mutate(
+    across(c(estimate, se, true_att, bias), ~ round(.x, 3)),
+    p_value = signif(p_value, 3)
+  ) %>%
+  knitr::kable()
+```
+
+In this example: TWFE and Matrix Completion (via `fect`) coincide almost exactly (same point estimate, slightly different SEs). This indicates that the `fect` MC fit is effectively behaving like a two-way fixed effects model in this design (e.g., selecting few/no latent factors), so it should not be interpreted as a meaningfully different estimator here. I could not find evidence that MC is delivering a low-rank robustness correction, but this should be better investigated. TROP is closer to the true ATT in this draw and its confidence interval covers the true effect. SynthDiD is imprecise (large SE) and does not reject in this draw; its point estimate is below the true ATT.
+
+
 ## Power Analysis
 
-Figure 1 shows power curves under moderate latent trends with loadings correlated with treatment. The true ATT ranges from 0 (null) to approximately 6.5 percentage points at $\delta = 0.8$.
+@fig-power and @tbl-power-summary summarize Monte Carlo performance across treatment strengths (log-odds shifts) under the calibrated DGP.
 
-```{r power-curves, fig.cap="Power curves under moderate latent trends with correlated loadings. All estimators treat the binary outcome as continuous. Dashed line: 5\\% size. Dotted line: 80\\% power target."}
+```{r}
+#| label: fig-power
+#| fig-cap: "Rejection rates (power/size) across treatment strengths under the calibrated DGP."
+#| echo: false
 knitr::include_graphics("../figures/power_curves.pdf")
 ```
 
-**Key findings:**
+Key takeaways from the calibrated power study include that size control is imperfect for some methods. When $\delta=0$ (no effect), TWFE is close to nominal size, whereas Matrix Completion (via `fect`) and SynthDiD reject too often, indicating inflated Type I error. TROP is closest to nominal size and exhibits the best coverage at $\delta=0$. Matrix Completion (via `fect`) does not improve point-estimation accuracy relative to TWFE in this design. Across values of $\delta$, MC and TWFE display essentially the same average bias and RMSE; differences mainly arise in inference (standard errors, coverage, and power), rather than in point estimates. Overall, the results reflect a bias–variance tradeoff. TROP behaves more conservatively, with higher coverage and lower rejection rates, while SynthDiD is typically less powerful and tends to attenuate estimated effects in this binary-outcome setting.
 
-- **Matrix Completion** achieves highest power (57% at $\delta = 0.8$) with near-zero bias and proper size control (6%), making it the best-performing estimator.
-- **TWFE** shows small positive bias (~0.3pp) but maintains good coverage (93%) and competitive power (53% at $\delta = 0.8$).
-- **TROP** has slight negative bias (~-0.3pp) with excellent coverage (94%) but lower power (38% at $\delta = 0.8$).
-- **Synthetic DiD** exhibits persistent negative bias (~2.0pp) across all effect sizes, inflated size (9.5% vs. nominal 5%), and attenuated power (28% at $\delta = 0.8$).
-
-```{r bias-coverage, fig.show="hold", out.width="49%", fig.cap="Left: Bias by true ATT. SDID shows persistent negative bias (~-2pp); TWFE has small positive bias; MC and TROP are approximately unbiased. Right: 95\\% CI coverage. All methods achieve reasonable coverage (90--95\\%)."}
-knitr::include_graphics(c("../figures/bias_curve.pdf", "../figures/coverage_curve.pdf"))
+```{r}
+#| label: fig-bias
+#| fig-cap: "Bias as a function of treatment strength under the calibrated DGP."
+#| echo: false
+knitr::include_graphics("../figures/bias_curve.pdf")
 ```
 
-Table 1 summarizes performance at $\delta = 0.6$ (true ATT $\approx$ 4.4pp):
+```{r}
+#| label: fig-coverage
+#| fig-cap: "Coverage of nominal 95% intervals under the calibrated DGP."
+#| echo: false
+knitr::include_graphics("../figures/coverage_curve.pdf")
+```
 
-```{r power-table}
-power_summary <- read_csv("../output/power_summary.csv", show_col_types = FALSE) %>%
-  filter(delta == 0.6) %>%
-  select(Method = method, `True ATT` = true_att, Bias = bias, RMSE = rmse,
-         Coverage = coverage, Power = rejection_rate) %>%
-  mutate(across(where(is.numeric), ~round(., 3)))
+```{r}
+#| label: tbl-power-summary
+#| tbl-cap: 'Monte Carlo summary at a moderate effect size ($\delta = 0.8$).'
+#| echo: false
+library(tidyverse)
 
-kable(power_summary, booktabs = TRUE,
-      caption = "Performance at delta = 0.6 (moderate effect size, moderate latent trends with correlated loadings)") %>%
-  kable_styling(latex_options = c("hold_position"))
+ps <- readr::read_csv("../output/power_summary.csv", show_col_types = FALSE)
+
+ps %>%
+  filter(delta == 0.8) %>%
+  select(method, true_att, mean_estimate, bias, rmse, coverage, rejection_rate) %>%
+  mutate(
+    across(c(true_att, mean_estimate, bias, rmse, coverage, rejection_rate), ~ round(.x, 3))
+  ) %>%
+  arrange(desc(rejection_rate)) %>%
+  knitr::kable()
 ```
 
 ## Scenario Analysis
 
-Table 2 compares estimators across five DGP scenarios with fixed $\delta = 0.6$:
+The scenario analysis varies the strength of latent trends, measurement error, and whether the treatment effect is transient (May–June only). @tbl-scenario summarizes performance.
 
-```{r scenario-table}
-scenario_summary <- read_csv("../output/scenario_summary.csv", show_col_types = FALSE) %>%
-  select(Scenario = scenario, Method = method, `True ATT` = true_att,
-         Bias = bias, RMSE = rmse, Coverage = coverage, Power = power) %>%
-  mutate(across(where(is.numeric), ~round(., 3))) %>%
-  mutate(Scenario = case_when(
-    str_detect(Scenario, "Parallel") ~ "Parallel trends",
-    str_detect(Scenario, "Moderate") ~ "Moderate latent",
-    str_detect(Scenario, "Strong latent trends") ~ "Strong latent",
-    str_detect(Scenario, "underreporting") ~ "Strong + underreport",
-    str_detect(Scenario, "Short") ~ "Short-lived effect",
-    TRUE ~ Scenario
-  ))
+```{r}
+#| label: tbl-scenario
+#| tbl-cap: "Scenario analysis (mean performance across simulations)."
+#| echo: false
+library(tidyverse)
 
-kable(scenario_summary, booktabs = TRUE,
-      caption = "Performance across DGP scenarios (delta = 0.6). Short-lived effect has ATT diluted over non-effect months.") %>%
-  kable_styling(latex_options = c("hold_position", "scale_down"), font_size = 9) %>%
-  collapse_rows(columns = 1, latex_hline = "major")
+sc <- readr::read_csv("../output/scenario_summary.csv", show_col_types = FALSE)
+
+sc %>%
+  select(scenario, method, true_att, bias, rmse, coverage, power) %>%
+  mutate(
+    across(c(true_att, bias, rmse, coverage, power), ~ round(.x, 3))
+  ) %>%
+  arrange(scenario, method) %>%
+  knitr::kable()
 ```
 
-**Key insights:**
-
-1. **Parallel trends**: When the assumption holds (no latent factors), MC achieves 100% power while all methods maintain low bias and good coverage.
-
-2. **Moderate to strong latent trends**: As latent trend strength and loading correlation increase, all methods show slightly increased bias. MC and TWFE maintain highest power (88--92%), while TROP and SDID are more conservative (74--86%).
-
-3. **Underreporting**: Adding 30% underreporting increases bias substantially for all methods (2--3pp), reflecting attenuation of the true effect by measurement error. Coverage drops to 78--83%.
-
-4. **Short-lived effect**: When treatment is active only in May--June 2017, the true ATT is diluted (2.5pp vs. 16pp). Power drops to 14--18% for all methods, reflecting the fundamental difficulty of detecting transient effects.
-
-# Discussion
-
-## Strengths and Weaknesses
-
-**Matrix Completion** emerges as the top performer: near-zero bias combined with highest power across settings. The SVD-based imputation successfully captures the low-rank structure induced by correlated loadings. MC is particularly effective when latent factor structure is present, as it directly models this structure.
-
-**TWFE** shows small positive bias (~0.3pp) when loadings are correlated with treatment, but remains competitive. This confirms that TWFE bias under interactive fixed effects requires *correlation* between loadings and treatment---random loadings alone do not bias TWFE. For moderate violations, TWFE remains a viable choice with good power.
-
-**TROP** offers reliable performance with minimal bias and excellent coverage, but sacrifices power relative to MC and TWFE. Its triple robustness property provides theoretical guarantees that may be valuable when the correct specification is uncertain.
-
-**Synthetic DiD** exhibits a persistent negative bias of approximately 2 percentage points. This is a methodological finding: SDID was designed for continuous outcomes, and its weighting optimization may not perform well with sparse binary data (event rate ~6%). The regularization toward the grand mean pulls estimates downward when the outcome is right-skewed. Testing with continuous outcomes (e.g., $Y_{\text{ihs}} = \text{asinh}(\text{deaths})$) is left for future work, but practitioners should exercise caution applying SDID to binary or count outcomes.
-
-## Practical Recommendations
-
-1. **Default choice**: Matrix Completion offers the best combination of low bias and high power when latent factor structure is suspected.
-
-2. **Transparency**: TWFE remains a strong baseline. Report both TWFE and MC; if estimates diverge substantially, latent trends correlated with treatment may be present.
-
-3. **Binary/sparse outcomes**: Avoid SDID unless adapted for discrete data. The persistent negative bias observed here suggests SDID's continuous-outcome assumptions are violated.
-
-4. **Robustness**: TROP provides theoretical guarantees at the cost of power; use when robustness is prioritized over detection.
-
-5. **Always**: Assess sensitivity via simulation calibrated to the application, as method performance depends on DGP features.
+The main qualitative patterns are: in persistent-effect scenarios, TWFE and Matrix Completion behave similarly in terms of bias and RMSE, but Matrix Completion tends to undercover more and can appear “more powerful” largely because it reports smaller standard errors. In the short-lived effect scenario, Matrix Completion can break down sharply, with large bias and severe under-coverage, which is consistent with a mismatch between the estimator’s implicit treatment structure and a transient policy shock. In that scenario, TROP and SynthDiD remain much more stable, albeit with lower power. These simulations are designed to be application-motivated rather than “best case” for any method: sparse binary outcomes, interactive fixed effects with loadings correlated with treatment, and a limited number of treated units. The most important empirical takeaway from the current implementation is that Matrix Completion via `fect` is not acting like a distinct low-rank imputation estimator in this design. In both the one-dataset illustration and the Monte Carlo summaries, its point estimates track TWFE extremely closely. When this happens, MC should be interpreted as “TWFE with different uncertainty quantification,” not as a robustness improvement.
 
 # Future Directions
 
 Several extensions merit investigation:
 
-1. **SDID for discrete outcomes**: Develop variants of SDID with link functions (logit, Poisson) appropriate for binary or count data, or test performance with continuous transformations like $Y_{\text{ihs}}$.
+1. SDID for discrete outcomes: Develop variants of SDID with link functions (logit, Poisson) appropriate for binary or count data, or test performance with continuous transformations like $Y_{\text{ihs}}$.
 
-2. **Heterogeneous treatment effects**: Current simulations assume constant $\delta$ across treated units. Realistic settings often exhibit effect heterogeneity by distance or time.
+2. Heterogeneous treatment effects: Current simulations assume constant $\delta$ across treated units. Realistic settings often exhibit effect heterogeneity by distance or time.
 
-3. **Optimal rank selection**: Investigate data-driven methods for choosing the number of latent factors in MC and TROP (e.g., cross-validation, information criteria).
+3. Optimal rank selection: Investigate data-driven methods for choosing the number of latent factors in MC and TROP (e.g., cross-validation, information criteria).
 
-4. **Inference under interference**: Spatial settings may exhibit spillover effects between adjacent cells, violating SUTVA.
+4. Inference under interference: Spatial settings may exhibit spillover effects between adjacent cells, violating SUTVA.
 
-5. **Real data application**: Apply these methods to actual IOM incident data to estimate the causal effect of the Italy--Libya MoU.
-
-# Conclusion
-
-This simulation study demonstrates that under moderate latent trends with sparse binary outcomes, **Matrix Completion** offers the best performance among the four estimators examined---achieving near-zero bias with highest power. **TWFE** remains competitive when parallel trends violations are moderate, exhibiting only small bias (~0.3pp) despite correlated loadings. **TROP** provides robustness guarantees but trades power for reliability. Notably, **Synthetic DiD exhibits persistent negative bias (~2pp) with binary outcomes**, suggesting it is not appropriate for this class of problems without modification.
-
-The key lesson for practitioners: **method choice depends critically on outcome type and the correlation between latent factor loadings and treatment assignment**. When this correlation is modest, TWFE may suffice; when it is substantial, MC provides robust estimation with good power. Simulation studies calibrated to application-specific features remain essential for informed method selection.
-
----
-
-\footnotesize
-
-**Code availability**: All code and data to reproduce this analysis are available in the accompanying repository. The main script `R/run_analysis.R` runs the complete analysis pipeline.
-
-**Software**: R 4.3+; packages: tidyverse, fixest, synthdid, patchwork, scales.

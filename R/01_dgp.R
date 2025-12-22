@@ -223,12 +223,35 @@ generate_panel_data <- function(
 # TRUE ESTIMANDS (FOR SIMULATION EVALUATION)
 # =============================================================================
 
-compute_true_estimands <- function(panel, outcome_col = "Y_any") {
-  if (!("D" %in% names(panel))) {
-    panel <- panel %>% mutate(D = near_libya * post_treat)
+compute_true_estimands <- function(
+  panel,
+  outcome_col = "Y_any",
+  treat_type = c("post", "window"),
+  trim_after_window = (match.arg(treat_type) == "window")
+) {
+  treat_type <- match.arg(treat_type)
+
+  # For a short-lived "window" estimand, keep only pre + window months so that
+  # "pre" and "post" are well-defined for DID-style contrasts.
+  if (treat_type == "window" && isTRUE(trim_after_window)) {
+    if (!"effect_window" %in% names(panel)) {
+      stop("treat_type='window' requires panel$effect_window (from generate_time_panel())")
+    }
+    panel <- panel %>%
+      filter(post_treat == 0 | effect_window == 1)
   }
 
-  treated_post <- panel$D == 1
+  post_est <- if (treat_type == "post") {
+    panel$post_treat
+  } else {
+    if (!"effect_window" %in% names(panel)) {
+      stop("treat_type='window' requires panel$effect_window (from generate_time_panel())")
+    }
+    panel$effect_window
+  }
+
+  D_true <- as.integer(panel$near_libya * as.integer(post_est))
+  treated_post <- D_true == 1
 
   if (outcome_col == "Y_any") {
     att <- mean(panel$EY_any_1[treated_post] - panel$EY_any_0[treated_post], na.rm = TRUE)
@@ -236,7 +259,7 @@ compute_true_estimands <- function(panel, outcome_col = "Y_any") {
     tmp <- panel %>%
       mutate(
         group = ifelse(near_libya == 1, "near", "far"),
-        period = ifelse(post_treat == 1, "post", "pre")
+        period = ifelse(post_est == 1, "post", "pre")
       ) %>%
       group_by(group, period) %>%
       summarise(m = mean(EY_any_obs, na.rm = TRUE), .groups = "drop") %>%
@@ -252,7 +275,7 @@ compute_true_estimands <- function(panel, outcome_col = "Y_any") {
   tmp <- panel %>%
     mutate(
       group = ifelse(near_libya == 1, "near", "far"),
-      period = ifelse(post_treat == 1, "post", "pre")
+      period = ifelse(post_est == 1, "post", "pre")
     ) %>%
     group_by(group, period) %>%
     summarise(m = mean(Y, na.rm = TRUE), .groups = "drop") %>%

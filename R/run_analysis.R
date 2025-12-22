@@ -5,10 +5,10 @@
 #' Application-motivated DGP: Italy–Libya MoU (May 2017 operational onset)
 #'
 #' Estimators compared:
-#'   - TWFE: Two-way fixed effects (baseline)
-#'   - Matrix Completion: Low-rank imputation (Athey et al. 2021)
-#'   - TROP: Triply robust panel estimator (Athey et al. 2025)
-#'   - SynthDiD: Synthetic Difference-in-Differences (Arkhangelsky et al. 2021)
+#'   - TWFE: Two-way fixed effects (fixest)
+#'   - Matrix Completion: Low-rank imputation 
+#'   - TROP: Triply robust panel estimator (custom)
+#'   - SynthDiD: Synthetic Difference-in-Differences (synthdid)
 #'
 #' Outputs used by writeup.qmd:
 #'   - output/power_summary.csv
@@ -18,29 +18,57 @@
 #'   - figures/coverage_curve.pdf
 #' ============================================================================
 
+# Set seed for reproducibility
+set.seed(42)
+
+# -----------------------------------------------------------------------------
+# Quiet install helper (keeps script self-contained + consistent with setup)
+# -----------------------------------------------------------------------------
+quiet_install <- function(pkgs) {
+  for (pkg in pkgs) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      suppressWarnings(suppressMessages(
+        install.packages(pkg, dependencies = TRUE)
+      ))
+    }
+  }
+}
+
+# Packages used in this script (quietly install if missing)
+quiet_install(c(
+  "tidyverse", "fixest", "patchwork", "scales",
+  "furrr", "progressr", "synthdid"
+))
+
+# -----------------------------------------------------------------------------
+# Parallel setup (optional)
+# -----------------------------------------------------------------------------
 if (requireNamespace("furrr", quietly = TRUE)) {
-  library(furrr)
-  plan(multisession, workers = parallel::detectCores() - 1)
-  cat("Parallel processing enabled:", parallel::detectCores() - 1, "workers\n")
+  suppressPackageStartupMessages(library(furrr))
+  n_workers <- max(1, parallel::detectCores() - 1)
+  plan(multisession, workers = n_workers)
+  cat("Parallel processing enabled:", n_workers, "workers\n")
 }
 
 cat("Loading packages...\n")
 suppressPackageStartupMessages({
   library(tidyverse)
-  library(fixest)
+  library(fixest) # TWFE
   library(patchwork)
   library(scales)
+  library(synthdid) # SynthDiD
 })
 
 # -----------------------------------------------------------------------------
 # Source project code (functions exist only after this)
 # -----------------------------------------------------------------------------
 source("R/01_dgp.R")
+source("R/02_calibration.R")
 source("R/03_estimators.R")
 source("R/04_simulation.R")
 
-dir.create("figures", showWarnings = FALSE)
-dir.create("output", showWarnings = FALSE)
+dir.create("figures", showWarnings = FALSE, recursive = TRUE)
+dir.create("output", showWarnings = FALSE, recursive = TRUE)
 
 OUTCOME_COL <- "Y_any"
 START_DATE <- "2015-04-01"
@@ -48,15 +76,16 @@ END_DATE <- "2018-02-01"
 TREAT_START <- "2017-05-01"
 NEAR_CUTOFF <- 200
 
-# Determine which estimators to use
-ESTIMATORS <- c("twfe", "mc", "trop")
-if (exists("SYNTHDID_AVAILABLE") && SYNTHDID_AVAILABLE) {
-  ESTIMATORS <- c(ESTIMATORS, "sdid")
-  cat("SynthDiD available: YES\n")
-} else {
-  cat("SynthDiD available: NO (install synthdid package to enable)\n")
-}
+# -----------------------------------------------------------------------------
+# Estimator set (treat sdid like the others: include it => must be installed)
+# -----------------------------------------------------------------------------
+ESTIMATORS <- c("twfe", "mc", "trop", "sdid")
 cat("Estimators:", paste(ESTIMATORS, collapse = ", "), "\n\n")
+
+# Enforce SynthDiD availability if requested
+if ("sdid" %in% ESTIMATORS && !requireNamespace("synthdid", quietly = TRUE)) {
+  stop("SynthDiD requires the 'synthdid' package. Install it with: install.packages('synthdid')")
+}
 
 # =============================================================================
 # PART 0: LOAD CALIBRATION FROM SAVED FILE
@@ -91,15 +120,26 @@ time_panel <- generate_time_panel(
   seasonality_index = if (!is.null(calibration)) calibration$seasonality_index else NULL
 )
 
+# Writeup-friendly calibration diagnostics (function should be safe if IOM file missing)
+if (!is.null(calibration)) {
+  make_calibration_figures(
+    calibration = calibration,
+    grid = grid,
+    time_panel = time_panel,
+    treat_start = TREAT_START,
+    fig_dir = "figures"
+  )
+}
+
 example_data <- generate_panel_data(
   grid = grid,
   time_panel = time_panel,
   baseline_mortality = if (!is.null(calibration)) calibration$baseline_mortality else 0.02,
-  delta = 0.6,
+  delta = 1.2,
   factor_strength = 0.5,
   loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
   underreporting_rate = 0.0,
-  short_lived = FALSE, # Persistent effects are easier to detect
+  short_lived = FALSE,
   seed = 123
 )
 
@@ -127,6 +167,7 @@ example_results <- run_all_estimators(
   true_att = true$att,
   estimators = ESTIMATORS
 )
+
 print(example_results %>% select(method, estimate, se, true_att, bias, p_value))
 write_csv(example_results, "output/example_estimates.csv")
 
@@ -137,13 +178,13 @@ cat("============================================================\n\n")
 power_results <- run_power_analysis(
   baseline_mortality = if (!is.null(calibration)) calibration$baseline_mortality else 0.02,
   seasonality_index = if (!is.null(calibration)) calibration$seasonality_index else NULL,
-  delta_values = c(0, 0.2, 0.4, 0.6, 0.8),
+  delta_values = c(0, 0.4, 0.8, 1.2, 1.6), 
   n_sims = 200,
   estimators = ESTIMATORS,
   outcome_col = OUTCOME_COL,
   base_params = list(
     factor_strength = 0.5,
-    loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
+    loading_correlation = 0.5,
     underreporting_rate = 0.0,
     short_lived = FALSE
   )

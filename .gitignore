@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
 
 # Real data files (not to be published)
 data/iom_mediterranean_2014_2020.csv

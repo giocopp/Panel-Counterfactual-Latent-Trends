@@ -6,45 +6,27 @@ install_packages <- function() {
   required <- c(
     "tidyverse",
     "lubridate",
-    "fixest",
+    "fixest", 
+    "fect",
     "Matrix",
-    "patchwork",
-    "scales"
-  )
-
-  optional <- c(
     "furrr",
     "progressr",
-    "synthdid" # Added for Synthetic DiD
+    "synthdid", 
+    "patchwork",
+    "scales"
   )
 
   cat("Installing required packages...\n")
   for (pkg in required) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
-      install.packages(pkg, dependencies = TRUE)
+      suppressWarnings(
+        suppressMessages(
+          install.packages(pkg, dependencies = TRUE)
+        )
+      )
     }
     cat("  ✓", pkg, "\n")
   }
-
-  cat("\nNote: Using custom implementations for Matrix Completion and TROP.\n")
-
-  cat("\nInstalling optional packages...\n")
-  for (pkg in optional) {
-    if (!requireNamespace(pkg, quietly = TRUE)) {
-      tryCatch(
-        {
-          install.packages(pkg, dependencies = TRUE)
-          cat("  ✓", pkg, "\n")
-        },
-        error = function(e) {
-          cat("  ✗", pkg, "(failed:", e$message, ")\n")
-        }
-      )
-    } else {
-      cat("  ✓", pkg, "\n")
-    }
-  }
-
   cat("\nDone!\n\n")
 }
 
@@ -54,7 +36,9 @@ cat("=== Quick Test ===\n\n")
 
 suppressPackageStartupMessages({
   library(tidyverse)
-  library(fixest)
+  library(fixest) # TWFE
+  library(fect) # MC via fect
+  library(synthdid) # SynthDiD
 })
 
 source("R/01_dgp.R")
@@ -66,7 +50,7 @@ time_panel <- generate_time_panel()
 panel <- generate_panel_data(
   grid = grid,
   time_panel = time_panel,
-  delta = 0.6,
+  delta = 1.2,
   factor_strength = 0.5,
   loading_correlation = 0.5, # Correlated loadings -> violates parallel trends
   short_lived = TRUE,
@@ -97,24 +81,11 @@ cat(
   "(bias:", round(trop_res$estimate - true$att, 4), ")\n"
 )
 
-# Test SynthDiD if available
-if (exists("SYNTHDID_AVAILABLE") && SYNTHDID_AVAILABLE) {
-  sdid_res <- tryCatch(
-    estimate_sdid(panel, outcome_col = "Y_any"),
-    error = function(e) {
-      cat("  ✗ SynthDiD failed:", e$message, "\n")
-      NULL
-    }
-  )
-  if (!is.null(sdid_res) && !is.na(sdid_res$estimate)) {
-    cat(
-      "  ✓ SynthDiD estimate:", round(sdid_res$estimate, 4),
-      "(bias:", round(sdid_res$estimate - true$att, 4), ")\n"
-    )
-  }
-} else {
-  cat("  - SynthDiD: package not installed (optional)\n")
-}
+sdid_res <- estimate_sdid(panel, outcome_col = "Y_any")
+cat(
+  "  ✓ SynthDiD estimate:", round(sdid_res$estimate, 4),
+  "(bias:", round(sdid_res$estimate - true$att, 4), ")\n"
+)
 
 cat("\nTrue ATT:", round(true$att, 4), "\n\n")
 

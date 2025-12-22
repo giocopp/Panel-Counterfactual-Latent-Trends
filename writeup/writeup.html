@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Giorgio Coppola">
+<meta name="dcterms.date" content="2025-12-21">
+
+<title>Panel Counterfactual Estimators for Policy Shocks under Latent Trends</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="writeup_files/libs/clipboard/clipboard.min.js"></script>
+<script src="writeup_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="writeup_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="writeup_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="writeup_files/libs/quarto-html/popper.min.js"></script>
+<script src="writeup_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="writeup_files/libs/quarto-html/anchor.min.js"></script>
+<link href="writeup_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="writeup_files/libs/quarto-html/quarto-syntax-highlighting-f8a2dea7292acabc7edb49536b2d6373.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="writeup_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="writeup_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="writeup_files/libs/bootstrap/bootstrap-0919b65b45395e79bf63c1086c314691.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<style>html{ scroll-behavior: smooth; }</style>
+<style>
+
+      .quarto-title-block .quarto-title-banner h1,
+      .quarto-title-block .quarto-title-banner h2,
+      .quarto-title-block .quarto-title-banner h3,
+      .quarto-title-block .quarto-title-banner h4,
+      .quarto-title-block .quarto-title-banner h5,
+      .quarto-title-block .quarto-title-banner h6
+      {
+        color: white;
+      }
+
+      .quarto-title-block .quarto-title-banner {
+        color: white;
+background: #0b1f3a;
+      }
+</style>
+<script src="writeup_files/libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="writeup_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <div class="quarto-title-block"><div><h1 class="title">Panel Counterfactual Estimators for Policy Shocks under Latent Trends</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
+            <p class="subtitle lead">A Simulation Study Motivated by the Italy–Libya MoU</p>
+                      </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Giorgio Coppola </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 21, 2025</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a></li>
+  <li><a href="#background-and-foundations" id="toc-background-and-foundations" class="nav-link" data-scroll-target="#background-and-foundations"><span class="header-section-number">2</span> Background and Foundations</a>
+  <ul class="collapse">
+  <li><a href="#parallel-trends-and-interactive-fixed-effects" id="toc-parallel-trends-and-interactive-fixed-effects" class="nav-link" data-scroll-target="#parallel-trends-and-interactive-fixed-effects"><span class="header-section-number">2.1</span> Parallel Trends and Interactive Fixed Effects</a></li>
+  <li><a href="#robust-estimators" id="toc-robust-estimators" class="nav-link" data-scroll-target="#robust-estimators"><span class="header-section-number">2.2</span> Robust Estimators</a></li>
+  </ul></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods"><span class="header-section-number">3</span> Methods</a>
+  <ul class="collapse">
+  <li><a href="#data-generating-process" id="toc-data-generating-process" class="nav-link" data-scroll-target="#data-generating-process"><span class="header-section-number">3.1</span> Data Generating Process</a></li>
+  <li><a href="#estimators" id="toc-estimators" class="nav-link" data-scroll-target="#estimators"><span class="header-section-number">3.2</span> Estimators</a></li>
+  </ul></li>
+  <li><a href="#simulation-design" id="toc-simulation-design" class="nav-link" data-scroll-target="#simulation-design"><span class="header-section-number">4</span> Simulation Design</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">5</span> Results</a>
+  <ul class="collapse">
+  <li><a href="#power-analysis" id="toc-power-analysis" class="nav-link" data-scroll-target="#power-analysis"><span class="header-section-number">5.1</span> Power Analysis</a></li>
+  <li><a href="#scenario-analysis" id="toc-scenario-analysis" class="nav-link" data-scroll-target="#scenario-analysis"><span class="header-section-number">5.2</span> Scenario Analysis</a></li>
+  </ul></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion"><span class="header-section-number">6</span> Discussion</a>
+  <ul class="collapse">
+  <li><a href="#strengths-and-weaknesses" id="toc-strengths-and-weaknesses" class="nav-link" data-scroll-target="#strengths-and-weaknesses"><span class="header-section-number">6.1</span> Strengths and Weaknesses</a></li>
+  <li><a href="#practical-recommendations" id="toc-practical-recommendations" class="nav-link" data-scroll-target="#practical-recommendations"><span class="header-section-number">6.2</span> Practical Recommendations</a></li>
+  </ul></li>
+  <li><a href="#future-directions" id="toc-future-directions" class="nav-link" data-scroll-target="#future-directions"><span class="header-section-number">7</span> Future Directions</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">8</span> Conclusion</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="writeup.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p>Difference-in-differences (DiD) is the workhorse method for evaluating policy interventions in observational panel data. The canonical two-way fixed effects (TWFE) estimator relies on the parallel trends assumption: absent treatment, treated and control units would have followed parallel trajectories. However, this assumption often fails in practice when units exhibit complex, heterogeneous trends driven by unobserved time-varying factors.</p>
+<p>Recent methodological advances propose estimators robust to violations of parallel trends by modeling low-rank latent factor structures. This paper compares four panel counterfactual estimators in the context of a spatial policy shock: <strong>TWFE</strong> (baseline), <strong>Matrix Completion</strong> (MC), <strong>Synthetic Difference-in-Differences</strong> (SDID), and <strong>Triply Robust Panel Estimator</strong> (TROP). Using Monte Carlo simulations calibrated to migration incident data in the Central Mediterranean from IOM, this project assesses each method’s bias, coverage, and power under interactive fixed effects of varying strength.</p>
+<p>The motivating application is the Italy–Libya Memorandum of Understanding (February 2017), which led to intensified Libyan Coast Guard patrols starting in May 2017. The research question is practical: <strong>when latent trends violate parallel trends, which estimator should practitioners use?</strong></p>
+</section>
+<section id="background-and-foundations" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Background and Foundations</h1>
+<section id="parallel-trends-and-interactive-fixed-effects" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="parallel-trends-and-interactive-fixed-effects"><span class="header-section-number">2.1</span> Parallel Trends and Interactive Fixed Effects</h2>
+<p>Consider a balanced panel with units <span class="math inline">i = 1, \ldots, N</span> observed over periods <span class="math inline">t = 1, \ldots, T</span>. The potential outcomes framework defines <span class="math inline">Y_{it}(0)</span> and <span class="math inline">Y_{it}(1)</span> as outcomes under control and treatment. A binary treatment indicator <span class="math inline">D_{it} \in \{0, 1\}</span> determines the observed outcome: <span class="math display">
+Y_{it} = Y_{it}(0) + D_{it} \cdot \tau_{it}, \quad \text{where } \tau_{it} = Y_{it}(1) - Y_{it}(0).
+</span></p>
+<p>In a canonical 2×2 DiD design, treatment turns on for a subset of units after period <span class="math inline">T_0</span>. TWFE estimates the average treatment effect on the treated (ATT) by regressing: <span class="math display">
+Y_{it} = \alpha_i + \lambda_t + \delta D_{it} + \varepsilon_{it},
+</span> where <span class="math inline">\alpha_i</span> and <span class="math inline">\lambda_t</span> are unit and time fixed effects. This is unbiased for ATT if <strong>parallel trends</strong> holds: <span class="math inline">E[Y_{it}(0) | i \in \text{treated}] - E[Y_{it}(0) | i \in \text{control}] = c</span> (constant over time).</p>
+<p>Parallel trends fails when units follow heterogeneous trends. A common generalization is the <strong>interactive fixed effects</strong> model (Bai 2009): <span class="math display">
+Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i' F_t + \varepsilon_{it},
+</span> where <span class="math inline">\lambda_i \in \mathbb{R}^K</span> are unit-specific loadings and <span class="math inline">F_t \in \mathbb{R}^K</span> are common time factors. Critically, TWFE is biased when factor loadings <span class="math inline">\lambda_i</span> are <strong>correlated with treatment assignment</strong>—that is, when treated units have systematically different loadings than control units, creating differential trends.</p>
+</section>
+<section id="robust-estimators" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="robust-estimators"><span class="header-section-number">2.2</span> Robust Estimators</h2>
+<p>Recent work proposes estimators that accommodate latent trends:</p>
+<ul>
+<li><p><strong>Matrix Completion (MC)</strong>: Models the untreated potential outcome matrix <span class="math inline">Y(0)</span> as low-rank, using singular value decomposition (SVD) to impute counterfactuals for treated observations (Athey et al.&nbsp;2021).</p></li>
+<li><p><strong>Synthetic Difference-in-Differences (SDID)</strong>: Constructs synthetic controls using pre-period matching, combining unit weights (to match treated units’ pre-period means) with time weights (to emphasize recent pre-periods), then applies a DiD-style contrast (Arkhangelsky et al.&nbsp;2021).</p></li>
+<li><p><strong>TROP (Triply Robust Panel Estimator)</strong>: Combines unit weights, time weights, and regression adjustment. Consistent if <em>any one</em> of three conditions holds: unit weights balance loadings, time weights balance factors, or the regression adjustment is correctly specified (Athey et al.&nbsp;2025).</p></li>
+</ul>
+</section>
+</section>
+<section id="methods" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Methods</h1>
+<section id="data-generating-process" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="data-generating-process"><span class="header-section-number">3.1</span> Data Generating Process</h2>
+<p>I simulate a spatial panel of <span class="math inline">N = 56</span> grid cells (1° × 1° resolution) in the Central Mediterranean, observed monthly from April 2015 to February 2018 (<span class="math inline">T = 35</span>). The treatment is defined as: <span class="math display">
+D_{it} = \mathbb{1}\{\text{distance}_i \leq 200\text{ km from Tripoli}\} \times \mathbb{1}\{t \geq \text{May 2017}\}.
+</span></p>
+<p>The outcome <span class="math inline">Y_{it}^{\text{any}} = \mathbb{1}\{\text{deaths observed in cell } i \text{, month } t &gt; 0\}</span> is a binary deadly-event indicator. Deaths are generated hierarchically:</p>
+<ol type="1">
+<li><strong>Exposure</strong>: Migration attempts <span class="math inline">M_{it} \sim \text{Poisson}(\mu_{it})</span>, where <span class="math inline">\mu_{it}</span> includes seasonality and latent trends.</li>
+<li><strong>Mortality</strong>: Each attempt has per-attempt mortality probability <span class="math inline">p_{it}</span> following a logistic model with interactive fixed effects.</li>
+<li><strong>Deaths</strong>: <span class="math inline">\text{Deaths}_{it} \sim \text{Binomial}(M_{it}, p_{it})</span>.</li>
+</ol>
+<p>The key DGP features are:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive fixed effects with CORRELATED loadings</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>loadings <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(N <span class="sc">*</span> n_factors), <span class="at">nrow =</span> N, <span class="at">ncol =</span> n_factors)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Near-Libya units have systematically different loadings</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>loadings[near_libya <span class="sc">==</span> <span class="dv">1</span>, ] <span class="ot">&lt;-</span> loadings[near_libya <span class="sc">==</span> <span class="dv">1</span>, ] <span class="sc">+</span> loading_correlation</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>factors  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(T <span class="sc">*</span> n_factors), <span class="at">nrow =</span> T, <span class="at">ncol =</span> n_factors)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>interactive <span class="ot">&lt;-</span> loadings <span class="sc">%*%</span> <span class="fu">t</span>(factors)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Treatment effect on log-odds scale</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>p0 <span class="ot">=</span> <span class="fu">plogis</span>(logit_base <span class="sc">+</span> alpha_i <span class="sc">+</span> lambda_t <span class="sc">+</span> factor_strength <span class="sc">*</span> lf_it)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">=</span> <span class="fu">plogis</span>(logit_base <span class="sc">+</span> alpha_i <span class="sc">+</span> lambda_t <span class="sc">+</span> factor_strength <span class="sc">*</span> lf_it <span class="sc">+</span> delta)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Binary outcome (at least one death)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>Y_any <span class="ot">=</span> <span class="dv">1</span>{deaths_observed <span class="sc">&gt;</span> <span class="dv">0</span>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The DGP is calibrated to match pre-period deadly-event rates (~6.6%) from IOM Missing Migrants data. I vary <code>factor_strength</code> (0 = no latent factors, 0.5 = moderate, 0.9 = strong), <code>loading_correlation</code> (correlation between loadings and treatment assignment), and the treatment effect size <code>delta</code> on the log-odds scale.</p>
+</section>
+<section id="estimators" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="estimators"><span class="header-section-number">3.2</span> Estimators</h2>
+<p>All estimators target the ATT for the binary outcome <span class="math inline">Y^{\text{any}}</span>, treating it as continuous (linear probability model) for comparability:</p>
+<ol type="1">
+<li><strong>TWFE</strong>: <code>feols(Y ~ D | unit_id + time_id)</code> with cluster-robust SEs.</li>
+<li><strong>Matrix Completion</strong>: SVD-based imputation with nuclear norm regularization. Bootstrap SEs.</li>
+<li><strong>SDID</strong>: Uses <code>synthdid</code> package with jackknife SEs for valid inference.</li>
+<li><strong>TROP</strong>: Exponential kernel weights for units and time, low-rank regression adjustment. Bootstrap SEs.</li>
+</ol>
+</section>
+</section>
+<section id="simulation-design" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Simulation Design</h1>
+<p>I conduct two experiments:</p>
+<ol type="1">
+<li><p><strong>Power analysis</strong>: Fix <code>factor_strength = 0.5</code> and <code>loading_correlation = 0.5</code> (moderate latent trends correlated with treatment) and vary treatment effect <span class="math inline">\delta \in \{0, 0.2, 0.4, 0.6, 0.8\}</span>. Run 200 replications per <span class="math inline">\delta</span> value.</p></li>
+<li><p><strong>Scenario analysis</strong>: Fix <span class="math inline">\delta = 0.6</span> and vary DGP features (parallel trends, moderate/strong latent trends, underreporting, short-lived effect). Run 100 replications per scenario.</p></li>
+</ol>
+<p>Performance metrics: bias, RMSE, 95% CI coverage (nominal target), and rejection rate (power/size at <span class="math inline">\alpha = 0.05</span>).</p>
+</section>
+<section id="results" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Results</h1>
+<section id="power-analysis" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="power-analysis"><span class="header-section-number">5.1</span> Power Analysis</h2>
+<p>Figure 1 shows power curves under moderate latent trends with loadings correlated with treatment. The true ATT ranges from 0 (null) to approximately 6.5 percentage points at <span class="math inline">\delta = 0.8</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><embed src="../figures/power_curves.pdf" class="img-fluid" style="width:85.0%"></p>
+<figcaption>Power curves under moderate latent trends with correlated loadings. All estimators treat the binary outcome as continuous. Dashed line: 5% size. Dotted line: 80% power target.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Key findings:</strong></p>
+<ul>
+<li><strong>Matrix Completion</strong> achieves highest power (57% at <span class="math inline">\delta = 0.8</span>) with near-zero bias and proper size control (6%), making it the best-performing estimator.</li>
+<li><strong>TWFE</strong> shows small positive bias (~0.3pp) but maintains good coverage (93%) and competitive power (53% at <span class="math inline">\delta = 0.8</span>).</li>
+<li><strong>TROP</strong> has slight negative bias (~-0.3pp) with excellent coverage (94%) but lower power (38% at <span class="math inline">\delta = 0.8</span>).</li>
+<li><strong>Synthetic DiD</strong> exhibits persistent negative bias (~2.0pp) across all effect sizes, inflated size (9.5% vs.&nbsp;nominal 5%), and attenuated power (28% at <span class="math inline">\delta = 0.8</span>).</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><embed src="../figures/bias_curve.pdf" class="img-fluid" style="width:49.0%"></p>
+<figcaption>Left: Bias by true ATT. SDID shows persistent negative bias (~-2pp); TWFE has small positive bias; MC and TROP are approximately unbiased. Right: 95% CI coverage. All methods achieve reasonable coverage (90–95%).</figcaption>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><embed src="../figures/coverage_curve.pdf" class="img-fluid" style="width:49.0%"></p>
+<figcaption>Left: Bias by true ATT. SDID shows persistent negative bias (~-2pp); TWFE has small positive bias; MC and TROP are approximately unbiased. Right: 95% CI coverage. All methods achieve reasonable coverage (90–95%).</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Table 1 summarizes performance at <span class="math inline">\delta = 0.6</span> (true ATT <span class="math inline">\approx</span> 4.4pp):</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small">
+<caption>Performance at delta = 0.6 (moderate effect size, moderate latent trends with correlated loadings)</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Method</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">True ATT</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Bias</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">RMSE</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Coverage</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Power</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">0.030</td>
+<td style="text-align: right;">0.935</td>
+<td style="text-align: right;">0.300</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">-0.020</td>
+<td style="text-align: right;">0.045</td>
+<td style="text-align: right;">0.915</td>
+<td style="text-align: right;">0.125</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">-0.003</td>
+<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">0.930</td>
+<td style="text-align: right;">0.230</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">0.032</td>
+<td style="text-align: right;">0.935</td>
+<td style="text-align: right;">0.275</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="scenario-analysis" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="scenario-analysis"><span class="header-section-number">5.2</span> Scenario Analysis</h2>
+<p>Table 2 compares estimators across five DGP scenarios with fixed <span class="math inline">\delta = 0.6</span>:</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small">
+<caption>Performance across DGP scenarios (delta = 0.6). Short-lived effect has ATT diluted over non-effect months.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Scenario</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Method</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">True ATT</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Bias</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">RMSE</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Coverage</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Power</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td rowspan="4" style="text-align: left; vertical-align: middle !important;">Moderate latent</td>
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.165</td>
+<td style="text-align: right;">0.005</td>
+<td style="text-align: right;">0.047</td>
+<td style="text-align: right;">0.84</td>
+<td style="text-align: right;">0.95</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.165</td>
+<td style="text-align: right;">0.013</td>
+<td style="text-align: right;">0.065</td>
+<td style="text-align: right;">0.86</td>
+<td style="text-align: right;">0.86</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.165</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">0.067</td>
+<td style="text-align: right;">0.86</td>
+<td style="text-align: right;">0.78</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.165</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.054</td>
+<td style="text-align: right;">0.91</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+<tr class="odd">
+<td rowspan="4" style="text-align: left; vertical-align: middle !important;">Parallel trends</td>
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">-0.002</td>
+<td style="text-align: right;">0.038</td>
+<td style="text-align: right;">0.92</td>
+<td style="text-align: right;">1.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">0.005</td>
+<td style="text-align: right;">0.060</td>
+<td style="text-align: right;">0.91</td>
+<td style="text-align: right;">0.89</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">0.053</td>
+<td style="text-align: right;">0.97</td>
+<td style="text-align: right;">0.86</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">-0.004</td>
+<td style="text-align: right;">0.042</td>
+<td style="text-align: right;">0.95</td>
+<td style="text-align: right;">0.95</td>
+</tr>
+<tr class="odd">
+<td rowspan="4" style="text-align: left; vertical-align: middle !important;">Short-lived effect</td>
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.025</td>
+<td style="text-align: right;">0.006</td>
+<td style="text-align: right;">0.050</td>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">0.18</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.025</td>
+<td style="text-align: right;">0.013</td>
+<td style="text-align: right;">0.066</td>
+<td style="text-align: right;">0.91</td>
+<td style="text-align: right;">0.14</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.025</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">0.068</td>
+<td style="text-align: right;">0.92</td>
+<td style="text-align: right;">0.15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.025</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.057</td>
+<td style="text-align: right;">0.88</td>
+<td style="text-align: right;">0.14</td>
+</tr>
+<tr class="odd">
+<td rowspan="4" style="text-align: left; vertical-align: middle !important;">Strong + underreport</td>
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.024</td>
+<td style="text-align: right;">0.064</td>
+<td style="text-align: right;">0.78</td>
+<td style="text-align: right;">0.90</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.034</td>
+<td style="text-align: right;">0.084</td>
+<td style="text-align: right;">0.81</td>
+<td style="text-align: right;">0.76</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">0.077</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">0.78</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.074</td>
+<td style="text-align: right;">0.82</td>
+<td style="text-align: right;">0.81</td>
+</tr>
+<tr class="odd">
+<td rowspan="4" style="text-align: left; vertical-align: middle !important;">Strong latent</td>
+<td style="text-align: left;">Matrix Completion</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.003</td>
+<td style="text-align: right;">0.055</td>
+<td style="text-align: right;">0.80</td>
+<td style="text-align: right;">0.88</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SynthDiD</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.014</td>
+<td style="text-align: right;">0.069</td>
+<td style="text-align: right;">0.82</td>
+<td style="text-align: right;">0.78</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TROP</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.005</td>
+<td style="text-align: right;">0.070</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">0.74</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TWFE</td>
+<td style="text-align: right;">0.150</td>
+<td style="text-align: right;">0.004</td>
+<td style="text-align: right;">0.067</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">0.78</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Key insights:</strong></p>
+<ol type="1">
+<li><p><strong>Parallel trends</strong>: When the assumption holds (no latent factors), MC achieves 100% power while all methods maintain low bias and good coverage.</p></li>
+<li><p><strong>Moderate to strong latent trends</strong>: As latent trend strength and loading correlation increase, all methods show slightly increased bias. MC and TWFE maintain highest power (88–92%), while TROP and SDID are more conservative (74–86%).</p></li>
+<li><p><strong>Underreporting</strong>: Adding 30% underreporting increases bias substantially for all methods (2–3pp), reflecting attenuation of the true effect by measurement error. Coverage drops to 78–83%.</p></li>
+<li><p><strong>Short-lived effect</strong>: When treatment is active only in May–June 2017, the true ATT is diluted (2.5pp vs.&nbsp;16pp). Power drops to 14–18% for all methods, reflecting the fundamental difficulty of detecting transient effects.</p></li>
+</ol>
+</section>
+</section>
+<section id="discussion" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Discussion</h1>
+<section id="strengths-and-weaknesses" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="strengths-and-weaknesses"><span class="header-section-number">6.1</span> Strengths and Weaknesses</h2>
+<p><strong>Matrix Completion</strong> emerges as the top performer: near-zero bias combined with highest power across settings. The SVD-based imputation successfully captures the low-rank structure induced by correlated loadings. MC is particularly effective when latent factor structure is present, as it directly models this structure.</p>
+<p><strong>TWFE</strong> shows small positive bias (~0.3pp) when loadings are correlated with treatment, but remains competitive. This confirms that TWFE bias under interactive fixed effects requires <em>correlation</em> between loadings and treatment—random loadings alone do not bias TWFE. For moderate violations, TWFE remains a viable choice with good power.</p>
+<p><strong>TROP</strong> offers reliable performance with minimal bias and excellent coverage, but sacrifices power relative to MC and TWFE. Its triple robustness property provides theoretical guarantees that may be valuable when the correct specification is uncertain.</p>
+<p><strong>Synthetic DiD</strong> exhibits a persistent negative bias of approximately 2 percentage points. This is a methodological finding: SDID was designed for continuous outcomes, and its weighting optimization may not perform well with sparse binary data (event rate ~6%). The regularization toward the grand mean pulls estimates downward when the outcome is right-skewed. Testing with continuous outcomes (e.g., <span class="math inline">Y_{\text{ihs}} = \text{asinh}(\text{deaths})</span>) is left for future work, but practitioners should exercise caution applying SDID to binary or count outcomes.</p>
+</section>
+<section id="practical-recommendations" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="practical-recommendations"><span class="header-section-number">6.2</span> Practical Recommendations</h2>
+<ol type="1">
+<li><p><strong>Default choice</strong>: Matrix Completion offers the best combination of low bias and high power when latent factor structure is suspected.</p></li>
+<li><p><strong>Transparency</strong>: TWFE remains a strong baseline. Report both TWFE and MC; if estimates diverge substantially, latent trends correlated with treatment may be present.</p></li>
+<li><p><strong>Binary/sparse outcomes</strong>: Avoid SDID unless adapted for discrete data. The persistent negative bias observed here suggests SDID’s continuous-outcome assumptions are violated.</p></li>
+<li><p><strong>Robustness</strong>: TROP provides theoretical guarantees at the cost of power; use when robustness is prioritized over detection.</p></li>
+<li><p><strong>Always</strong>: Assess sensitivity via simulation calibrated to the application, as method performance depends on DGP features.</p></li>
+</ol>
+</section>
+</section>
+<section id="future-directions" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Future Directions</h1>
+<p>Several extensions merit investigation:</p>
+<ol type="1">
+<li><p><strong>SDID for discrete outcomes</strong>: Develop variants of SDID with link functions (logit, Poisson) appropriate for binary or count data, or test performance with continuous transformations like <span class="math inline">Y_{\text{ihs}}</span>.</p></li>
+<li><p><strong>Heterogeneous treatment effects</strong>: Current simulations assume constant <span class="math inline">\delta</span> across treated units. Realistic settings often exhibit effect heterogeneity by distance or time.</p></li>
+<li><p><strong>Optimal rank selection</strong>: Investigate data-driven methods for choosing the number of latent factors in MC and TROP (e.g., cross-validation, information criteria).</p></li>
+<li><p><strong>Inference under interference</strong>: Spatial settings may exhibit spillover effects between adjacent cells, violating SUTVA.</p></li>
+<li><p><strong>Real data application</strong>: Apply these methods to actual IOM incident data to estimate the causal effect of the Italy–Libya MoU.</p></li>
+</ol>
+</section>
+<section id="conclusion" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Conclusion</h1>
+<p>This simulation study demonstrates that under moderate latent trends with sparse binary outcomes, <strong>Matrix Completion</strong> offers the best performance among the four estimators examined—achieving near-zero bias with highest power. <strong>TWFE</strong> remains competitive when parallel trends violations are moderate, exhibiting only small bias (~0.3pp) despite correlated loadings. <strong>TROP</strong> provides robustness guarantees but trades power for reliability. Notably, <strong>Synthetic DiD exhibits persistent negative bias (~2pp) with binary outcomes</strong>, suggesting it is not appropriate for this class of problems without modification.</p>
+<p>The key lesson for practitioners: <strong>method choice depends critically on outcome type and the correlation between latent factor loadings and treatment assignment</strong>. When this correlation is modest, TWFE may suffice; when it is substantial, MC provides robust estimation with good power. Simulation studies calibrated to application-specific features remain essential for informed method selection.</p>
+<hr>
+<p><strong>Code availability</strong>: All code and data to reproduce this analysis are available in the accompanying repository. The main script <code>R/run_analysis.R</code> runs the complete analysis pipeline.</p>
+<p><strong>Software</strong>: R 4.3+; packages: tidyverse, fixest, synthdid, patchwork, scales.</p>
+<!-- -->
+
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // default icon
+            link.classList.add("external");
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Panel Counterfactual Estimators for Policy Shocks under Latent Trends"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "A Simulation Study Motivated by the Italy–Libya MoU"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Giorgio Coppola"</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> today</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">  pdf:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">    documentclass: article</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">    classoption: [10pt, a4paper]</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">    geometry:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">      - margin=1in</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">      - headheight=13pt</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">    fontsize: 10pt</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">    linestretch: 1.1</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: false</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-depth: 2</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-title: "Contents"</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">    colorlinks: true</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">    linkcolor: NavyBlue</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">    urlcolor: NavyBlue</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">    citecolor: NavyBlue</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">    pdf-engine: pdflatex</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">    include-in-header:</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co">      text: |</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co">        \usepackage{fancyhdr}</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co">        \pagestyle{fancy}</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">        \fancyhead[L]{\small Panel Counterfactual Estimators}</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co">        \fancyhead[R]{\small\thepage}</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">        \fancyfoot[C]{}</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">        \usepackage{booktabs}</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">        \usepackage{float}</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">        \floatplacement{figure}{H}</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">        \floatplacement{table}{H}</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">    theme: [cosmo, custom.scss]</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: true</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-location: left</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-depth: 3</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co">    smooth-scroll: true</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co">    link-external-icon: true</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co">    anchor-sections: true</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co">    highlight-style: github</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co">    html-math-method: katex</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co">    fig-cap-location: bottom</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co">    tbl-cap-location: top</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co">    citations-hover: true</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co">    title-block-banner: "#0b1f3a"</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co">    title-block-banner-color: white</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co">  echo: false</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co">  message: false</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> references.bib</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  <span class="at">fig.align =</span> <span class="st">"center"</span>,</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>  <span class="at">out.width =</span> <span class="st">"85%"</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>Difference-in-differences (DiD) is the workhorse method for evaluating policy interventions in observational panel data. The canonical two-way fixed effects (TWFE) estimator relies on the parallel trends assumption: absent treatment, treated and control units would have followed parallel trajectories. However, this assumption often fails in practice when units exhibit complex, heterogeneous trends driven by unobserved time-varying factors.</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>Recent methodological advances propose estimators robust to violations of parallel trends by modeling low-rank latent factor structures. This paper compares four panel counterfactual estimators in the context of a spatial policy shock: **TWFE** (baseline), **Matrix Completion** (MC), **Synthetic Difference-in-Differences** (SDID), and **Triply Robust Panel Estimator** (TROP). Using Monte Carlo simulations calibrated to migration incident data in the Central Mediterranean from IOM, this project assesses each method's bias, coverage, and power under interactive fixed effects of varying strength.</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>The motivating application is the Italy–Libya Memorandum of Understanding (February 2017), which led to intensified Libyan Coast Guard patrols starting in May 2017. The research question is practical: **when latent trends violate parallel trends, which estimator should practitioners use?**</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a><span class="fu"># Background and Foundations</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="fu">## Parallel Trends and Interactive Fixed Effects</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>Consider a balanced panel with units $i = 1, \ldots, N$ observed over periods $t = 1, \ldots, T$. The potential outcomes framework defines $Y_{it}(0)$ and $Y_{it}(1)$ as outcomes under control and treatment. A binary treatment indicator $D_{it} \in <span class="sc">\{</span>0, 1<span class="sc">\}</span>$ determines the observed outcome:</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>Y_{it} = Y_{it}(0) + D_{it} \cdot \tau_{it}, \quad \text{where } \tau_{it} = Y_{it}(1) - Y_{it}(0).</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>In a canonical 2×2 DiD design, treatment turns on for a subset of units after period $T_0$. TWFE estimates the average treatment effect on the treated (ATT) by regressing:</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>Y_{it} = \alpha_i + \lambda_t + \delta D_{it} + \varepsilon_{it},</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>where $\alpha_i$ and $\lambda_t$ are unit and time fixed effects. This is unbiased for ATT if **parallel trends** holds: $E<span class="co">[</span><span class="ot">Y_{it}(0) | i \in \text{treated}</span><span class="co">]</span> - E<span class="co">[</span><span class="ot">Y_{it}(0) | i \in \text{control}</span><span class="co">]</span> = c$ (constant over time).</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>Parallel trends fails when units follow heterogeneous trends. A common generalization is the **interactive fixed effects** model (Bai 2009):</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i' F_t + \varepsilon_{it},</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>where $\lambda_i \in \mathbb{R}^K$ are unit-specific loadings and $F_t \in \mathbb{R}^K$ are common time factors. Critically, TWFE is biased when factor loadings $\lambda_i$ are **correlated with treatment assignment**---that is, when treated units have systematically different loadings than control units, creating differential trends.</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a><span class="fu">## Robust Estimators</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>Recent work proposes estimators that accommodate latent trends:</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Matrix Completion (MC)**: Models the untreated potential outcome matrix $Y(0)$ as low-rank, using singular value decomposition (SVD) to impute counterfactuals for treated observations (Athey et al. 2021).</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Synthetic Difference-in-Differences (SDID)**: Constructs synthetic controls using pre-period matching, combining unit weights (to match treated units' pre-period means) with time weights (to emphasize recent pre-periods), then applies a DiD-style contrast (Arkhangelsky et al. 2021).</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**TROP (Triply Robust Panel Estimator)**: Combines unit weights, time weights, and regression adjustment. Consistent if *any one* of three conditions holds: unit weights balance loadings, time weights balance factors, or the regression adjustment is correctly specified (Athey et al. 2025).</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="fu"># Methods</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a><span class="fu">## Data Generating Process</span></span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>I simulate a spatial panel of $N = 56$ grid cells (1° × 1° resolution) in the Central Mediterranean, observed monthly from April 2015 to February 2018 ($T = 35$). The treatment is defined as:</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>D_{it} = \mathbb{1}<span class="sc">\{</span>\text{distance}_i \leq 200\text{ km from Tripoli}<span class="sc">\}</span> \times \mathbb{1}<span class="sc">\{</span>t \geq \text{May 2017}<span class="sc">\}</span>.</span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>The outcome $Y_{it}^{\text{any}} = \mathbb{1}<span class="sc">\{</span>\text{deaths observed in cell } i \text{, month } t &gt; 0<span class="sc">\}</span>$ is a binary deadly-event indicator. Deaths are generated hierarchically:</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Exposure**: Migration attempts $M_{it} \sim \text{Poisson}(\mu_{it})$, where $\mu_{it}$ includes seasonality and latent trends.</span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Mortality**: Each attempt has per-attempt mortality probability $p_{it}$ following a logistic model with interactive fixed effects.</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Deaths**: $\text{Deaths}_{it} \sim \text{Binomial}(M_{it}, p_{it})$.</span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>The key DGP features are:</span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a><span class="in">```{r dgp-code, echo=TRUE, eval=FALSE}</span></span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive fixed effects with CORRELATED loadings</span></span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>loadings <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(N <span class="sc">*</span> n_factors), <span class="at">nrow =</span> N, <span class="at">ncol =</span> n_factors)</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a><span class="co"># Near-Libya units have systematically different loadings</span></span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>loadings[near_libya <span class="sc">==</span> <span class="dv">1</span>, ] <span class="ot">&lt;-</span> loadings[near_libya <span class="sc">==</span> <span class="dv">1</span>, ] <span class="sc">+</span> loading_correlation</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>factors  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(T <span class="sc">*</span> n_factors), <span class="at">nrow =</span> T, <span class="at">ncol =</span> n_factors)</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>interactive <span class="ot">&lt;-</span> loadings <span class="sc">%*%</span> <span class="fu">t</span>(factors)</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a><span class="co"># Treatment effect on log-odds scale</span></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>p0 <span class="ot">=</span> <span class="fu">plogis</span>(logit_base <span class="sc">+</span> alpha_i <span class="sc">+</span> lambda_t <span class="sc">+</span> factor_strength <span class="sc">*</span> lf_it)</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">=</span> <span class="fu">plogis</span>(logit_base <span class="sc">+</span> alpha_i <span class="sc">+</span> lambda_t <span class="sc">+</span> factor_strength <span class="sc">*</span> lf_it <span class="sc">+</span> delta)</span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a><span class="co"># Binary outcome (at least one death)</span></span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>Y_any <span class="ot">=</span> <span class="dv">1</span>{deaths_observed <span class="sc">&gt;</span> <span class="dv">0</span>}</span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>The DGP is calibrated to match pre-period deadly-event rates (~6.6%) from IOM Missing Migrants data. I vary <span class="in">`factor_strength`</span> (0 = no latent factors, 0.5 = moderate, 0.9 = strong), <span class="in">`loading_correlation`</span> (correlation between loadings and treatment assignment), and the treatment effect size <span class="in">`delta`</span> on the log-odds scale.</span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a><span class="fu">## Estimators</span></span>
+<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a>All estimators target the ATT for the binary outcome $Y^{\text{any}}$, treating it as continuous (linear probability model) for comparability:</span>
+<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**TWFE**: <span class="in">`feols(Y ~ D | unit_id + time_id)`</span> with cluster-robust SEs.</span>
+<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Matrix Completion**: SVD-based imputation with nuclear norm regularization. Bootstrap SEs.</span>
+<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**SDID**: Uses <span class="in">`synthdid`</span> package with jackknife SEs for valid inference.</span>
+<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**TROP**: Exponential kernel weights for units and time, low-rank regression adjustment. Bootstrap SEs.</span>
+<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a><span class="fu"># Simulation Design</span></span>
+<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>I conduct two experiments:</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Power analysis**: Fix <span class="in">`factor_strength = 0.5`</span> and <span class="in">`loading_correlation = 0.5`</span> (moderate latent trends correlated with treatment) and vary treatment effect $\delta \in <span class="sc">\{</span>0, 0.2, 0.4, 0.6, 0.8<span class="sc">\}</span>$. Run 200 replications per $\delta$ value.</span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Scenario analysis**: Fix $\delta = 0.6$ and vary DGP features (parallel trends, moderate/strong latent trends, underreporting, short-lived effect). Run 100 replications per scenario.</span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>Performance metrics: bias, RMSE, 95% CI coverage (nominal target), and rejection rate (power/size at $\alpha = 0.05$).</span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a><span class="fu"># Results</span></span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a><span class="fu">## Power Analysis</span></span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>Figure 1 shows power curves under moderate latent trends with loadings correlated with treatment. The true ATT ranges from 0 (null) to approximately 6.5 percentage points at $\delta = 0.8$.</span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a><span class="in">```{r power-curves, fig.cap="Power curves under moderate latent trends with correlated loadings. All estimators treat the binary outcome as continuous. Dashed line: 5\\% size. Dotted line: 80\\% power target."}</span></span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">"../figures/power_curves.pdf"</span>)</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a>**Key findings:**</span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Matrix Completion** achieves highest power (57% at $\delta = 0.8$) with near-zero bias and proper size control (6%), making it the best-performing estimator.</span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**TWFE** shows small positive bias (~0.3pp) but maintains good coverage (93%) and competitive power (53% at $\delta = 0.8$).</span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**TROP** has slight negative bias (~-0.3pp) with excellent coverage (94%) but lower power (38% at $\delta = 0.8$).</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Synthetic DiD** exhibits persistent negative bias (~2.0pp) across all effect sizes, inflated size (9.5% vs. nominal 5%), and attenuated power (28% at $\delta = 0.8$).</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a><span class="in">```{r bias-coverage, fig.show="hold", out.width="49%", fig.cap="Left: Bias by true ATT. SDID shows persistent negative bias (~-2pp); TWFE has small positive bias; MC and TROP are approximately unbiased. Right: 95\\% CI coverage. All methods achieve reasonable coverage (90--95\\%)."}</span></span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="fu">c</span>(<span class="st">"../figures/bias_curve.pdf"</span>, <span class="st">"../figures/coverage_curve.pdf"</span>))</span>
+<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>Table 1 summarizes performance at $\delta = 0.6$ (true ATT $\approx$ 4.4pp):</span>
+<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a><span class="in">```{r power-table}</span></span>
+<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>power_summary <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../output/power_summary.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(delta <span class="sc">==</span> <span class="fl">0.6</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">Method =</span> method, <span class="st">`</span><span class="at">True ATT</span><span class="st">`</span> <span class="ot">=</span> true_att, <span class="at">Bias =</span> bias, <span class="at">RMSE =</span> rmse,</span>
+<span id="cb2-196"><a href="#cb2-196" aria-hidden="true" tabindex="-1"></a>         <span class="at">Coverage =</span> coverage, <span class="at">Power =</span> rejection_rate) <span class="sc">%&gt;%</span></span>
+<span id="cb2-197"><a href="#cb2-197" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(., <span class="dv">3</span>)))</span>
+<span id="cb2-198"><a href="#cb2-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-199"><a href="#cb2-199" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(power_summary, <span class="at">booktabs =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-200"><a href="#cb2-200" aria-hidden="true" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">"Performance at delta = 0.6 (moderate effect size, moderate latent trends with correlated loadings)"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-201"><a href="#cb2-201" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="fu">c</span>(<span class="st">"hold_position"</span>))</span>
+<span id="cb2-202"><a href="#cb2-202" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-203"><a href="#cb2-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-204"><a href="#cb2-204" aria-hidden="true" tabindex="-1"></a><span class="fu">## Scenario Analysis</span></span>
+<span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a>Table 2 compares estimators across five DGP scenarios with fixed $\delta = 0.6$:</span>
+<span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a><span class="in">```{r scenario-table}</span></span>
+<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>scenario_summary <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../output/scenario_summary.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-210"><a href="#cb2-210" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">Scenario =</span> scenario, <span class="at">Method =</span> method, <span class="st">`</span><span class="at">True ATT</span><span class="st">`</span> <span class="ot">=</span> true_att,</span>
+<span id="cb2-211"><a href="#cb2-211" aria-hidden="true" tabindex="-1"></a>         <span class="at">Bias =</span> bias, <span class="at">RMSE =</span> rmse, <span class="at">Coverage =</span> coverage, <span class="at">Power =</span> power) <span class="sc">%&gt;%</span></span>
+<span id="cb2-212"><a href="#cb2-212" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span><span class="fu">round</span>(., <span class="dv">3</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb2-213"><a href="#cb2-213" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Scenario =</span> <span class="fu">case_when</span>(</span>
+<span id="cb2-214"><a href="#cb2-214" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(Scenario, <span class="st">"Parallel"</span>) <span class="sc">~</span> <span class="st">"Parallel trends"</span>,</span>
+<span id="cb2-215"><a href="#cb2-215" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(Scenario, <span class="st">"Moderate"</span>) <span class="sc">~</span> <span class="st">"Moderate latent"</span>,</span>
+<span id="cb2-216"><a href="#cb2-216" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(Scenario, <span class="st">"Strong latent trends"</span>) <span class="sc">~</span> <span class="st">"Strong latent"</span>,</span>
+<span id="cb2-217"><a href="#cb2-217" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(Scenario, <span class="st">"underreporting"</span>) <span class="sc">~</span> <span class="st">"Strong + underreport"</span>,</span>
+<span id="cb2-218"><a href="#cb2-218" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(Scenario, <span class="st">"Short"</span>) <span class="sc">~</span> <span class="st">"Short-lived effect"</span>,</span>
+<span id="cb2-219"><a href="#cb2-219" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> Scenario</span>
+<span id="cb2-220"><a href="#cb2-220" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb2-221"><a href="#cb2-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-222"><a href="#cb2-222" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(scenario_summary, <span class="at">booktabs =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-223"><a href="#cb2-223" aria-hidden="true" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">"Performance across DGP scenarios (delta = 0.6). Short-lived effect has ATT diluted over non-effect months."</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-224"><a href="#cb2-224" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="fu">c</span>(<span class="st">"hold_position"</span>, <span class="st">"scale_down"</span>), <span class="at">font_size =</span> <span class="dv">9</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-225"><a href="#cb2-225" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collapse_rows</span>(<span class="at">columns =</span> <span class="dv">1</span>, <span class="at">latex_hline =</span> <span class="st">"major"</span>)</span>
+<span id="cb2-226"><a href="#cb2-226" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb2-227"><a href="#cb2-227" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-228"><a href="#cb2-228" aria-hidden="true" tabindex="-1"></a>**Key insights:**</span>
+<span id="cb2-229"><a href="#cb2-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-230"><a href="#cb2-230" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Parallel trends**: When the assumption holds (no latent factors), MC achieves 100% power while all methods maintain low bias and good coverage.</span>
+<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Moderate to strong latent trends**: As latent trend strength and loading correlation increase, all methods show slightly increased bias. MC and TWFE maintain highest power (88--92%), while TROP and SDID are more conservative (74--86%).</span>
+<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Underreporting**: Adding 30% underreporting increases bias substantially for all methods (2--3pp), reflecting attenuation of the true effect by measurement error. Coverage drops to 78--83%.</span>
+<span id="cb2-235"><a href="#cb2-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-236"><a href="#cb2-236" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Short-lived effect**: When treatment is active only in May--June 2017, the true ATT is diluted (2.5pp vs. 16pp). Power drops to 14--18% for all methods, reflecting the fundamental difficulty of detecting transient effects.</span>
+<span id="cb2-237"><a href="#cb2-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-238"><a href="#cb2-238" aria-hidden="true" tabindex="-1"></a><span class="fu"># Discussion</span></span>
+<span id="cb2-239"><a href="#cb2-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-240"><a href="#cb2-240" aria-hidden="true" tabindex="-1"></a><span class="fu">## Strengths and Weaknesses</span></span>
+<span id="cb2-241"><a href="#cb2-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-242"><a href="#cb2-242" aria-hidden="true" tabindex="-1"></a>**Matrix Completion** emerges as the top performer: near-zero bias combined with highest power across settings. The SVD-based imputation successfully captures the low-rank structure induced by correlated loadings. MC is particularly effective when latent factor structure is present, as it directly models this structure.</span>
+<span id="cb2-243"><a href="#cb2-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-244"><a href="#cb2-244" aria-hidden="true" tabindex="-1"></a>**TWFE** shows small positive bias (~0.3pp) when loadings are correlated with treatment, but remains competitive. This confirms that TWFE bias under interactive fixed effects requires *correlation* between loadings and treatment---random loadings alone do not bias TWFE. For moderate violations, TWFE remains a viable choice with good power.</span>
+<span id="cb2-245"><a href="#cb2-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-246"><a href="#cb2-246" aria-hidden="true" tabindex="-1"></a>**TROP** offers reliable performance with minimal bias and excellent coverage, but sacrifices power relative to MC and TWFE. Its triple robustness property provides theoretical guarantees that may be valuable when the correct specification is uncertain.</span>
+<span id="cb2-247"><a href="#cb2-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-248"><a href="#cb2-248" aria-hidden="true" tabindex="-1"></a>**Synthetic DiD** exhibits a persistent negative bias of approximately 2 percentage points. This is a methodological finding: SDID was designed for continuous outcomes, and its weighting optimization may not perform well with sparse binary data (event rate ~6%). The regularization toward the grand mean pulls estimates downward when the outcome is right-skewed. Testing with continuous outcomes (e.g., $Y_{\text{ihs}} = \text{asinh}(\text{deaths})$) is left for future work, but practitioners should exercise caution applying SDID to binary or count outcomes.</span>
+<span id="cb2-249"><a href="#cb2-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-250"><a href="#cb2-250" aria-hidden="true" tabindex="-1"></a><span class="fu">## Practical Recommendations</span></span>
+<span id="cb2-251"><a href="#cb2-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-252"><a href="#cb2-252" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Default choice**: Matrix Completion offers the best combination of low bias and high power when latent factor structure is suspected.</span>
+<span id="cb2-253"><a href="#cb2-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-254"><a href="#cb2-254" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Transparency**: TWFE remains a strong baseline. Report both TWFE and MC; if estimates diverge substantially, latent trends correlated with treatment may be present.</span>
+<span id="cb2-255"><a href="#cb2-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-256"><a href="#cb2-256" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Binary/sparse outcomes**: Avoid SDID unless adapted for discrete data. The persistent negative bias observed here suggests SDID's continuous-outcome assumptions are violated.</span>
+<span id="cb2-257"><a href="#cb2-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-258"><a href="#cb2-258" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Robustness**: TROP provides theoretical guarantees at the cost of power; use when robustness is prioritized over detection.</span>
+<span id="cb2-259"><a href="#cb2-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-260"><a href="#cb2-260" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Always**: Assess sensitivity via simulation calibrated to the application, as method performance depends on DGP features.</span>
+<span id="cb2-261"><a href="#cb2-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-262"><a href="#cb2-262" aria-hidden="true" tabindex="-1"></a><span class="fu"># Future Directions</span></span>
+<span id="cb2-263"><a href="#cb2-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-264"><a href="#cb2-264" aria-hidden="true" tabindex="-1"></a>Several extensions merit investigation:</span>
+<span id="cb2-265"><a href="#cb2-265" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-266"><a href="#cb2-266" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**SDID for discrete outcomes**: Develop variants of SDID with link functions (logit, Poisson) appropriate for binary or count data, or test performance with continuous transformations like $Y_{\text{ihs}}$.</span>
+<span id="cb2-267"><a href="#cb2-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-268"><a href="#cb2-268" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**Heterogeneous treatment effects**: Current simulations assume constant $\delta$ across treated units. Realistic settings often exhibit effect heterogeneity by distance or time.</span>
+<span id="cb2-269"><a href="#cb2-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-270"><a href="#cb2-270" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Optimal rank selection**: Investigate data-driven methods for choosing the number of latent factors in MC and TROP (e.g., cross-validation, information criteria).</span>
+<span id="cb2-271"><a href="#cb2-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-272"><a href="#cb2-272" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**Inference under interference**: Spatial settings may exhibit spillover effects between adjacent cells, violating SUTVA.</span>
+<span id="cb2-273"><a href="#cb2-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-274"><a href="#cb2-274" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**Real data application**: Apply these methods to actual IOM incident data to estimate the causal effect of the Italy--Libya MoU.</span>
+<span id="cb2-275"><a href="#cb2-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-276"><a href="#cb2-276" aria-hidden="true" tabindex="-1"></a><span class="fu"># Conclusion</span></span>
+<span id="cb2-277"><a href="#cb2-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-278"><a href="#cb2-278" aria-hidden="true" tabindex="-1"></a>This simulation study demonstrates that under moderate latent trends with sparse binary outcomes, **Matrix Completion** offers the best performance among the four estimators examined---achieving near-zero bias with highest power. **TWFE** remains competitive when parallel trends violations are moderate, exhibiting only small bias (~0.3pp) despite correlated loadings. **TROP** provides robustness guarantees but trades power for reliability. Notably, **Synthetic DiD exhibits persistent negative bias (~2pp) with binary outcomes**, suggesting it is not appropriate for this class of problems without modification.</span>
+<span id="cb2-279"><a href="#cb2-279" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-280"><a href="#cb2-280" aria-hidden="true" tabindex="-1"></a>The key lesson for practitioners: **method choice depends critically on outcome type and the correlation between latent factor loadings and treatment assignment**. When this correlation is modest, TWFE may suffice; when it is substantial, MC provides robust estimation with good power. Simulation studies calibrated to application-specific features remain essential for informed method selection.</span>
+<span id="cb2-281"><a href="#cb2-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-282"><a href="#cb2-282" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb2-283"><a href="#cb2-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-284"><a href="#cb2-284" aria-hidden="true" tabindex="-1"></a>\footnotesize</span>
+<span id="cb2-285"><a href="#cb2-285" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-286"><a href="#cb2-286" aria-hidden="true" tabindex="-1"></a>**Code availability**: All code and data to reproduce this analysis are available in the accompanying repository. The main script <span class="in">`R/run_analysis.R`</span> runs the complete analysis pipeline.</span>
+<span id="cb2-287"><a href="#cb2-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-288"><a href="#cb2-288" aria-hidden="true" tabindex="-1"></a>**Software**: R 4.3+; packages: tidyverse, fixest, synthdid, patchwork, scales.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<script src="writeup_files/libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
