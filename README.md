@@ -6,7 +6,10 @@ Submitted by: Giorgio Coppola
 
 ## Writeup
 
-📝 **Read the writeup [in PDF](writeup/writeup.pdf) or [in HTML](writeup/writeup.html)**
+📝 <strong>Read the writeup</strong>
+<a href="writeup/writeup.pdf" target="_blank" rel="noopener">in PDF</a>
+or
+<a href="writeup/writeup.html" target="_blank" rel="noopener">in HTML</a>
 
 ## Overview
 
