@@ -95,76 +95,46 @@ Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i' F_t + \varepsilon_{it},
 $$
 where $\lambda_i \in \mathbb{R}^K$ are unit-specific loadings and $F_t \in \mathbb{R}^K$ are common time factors. Critically, TWFE is biased when factor loadings $\lambda_i$ are correlated with treatment assignment, that is, when treated units have systematically different loadings than control units, creating differential trends.
 
-Recent work proposes estimators that accommodate latent trends:
-
-- Matrix Completion (MC): Models the untreated potential outcome matrix $Y(0)$ as low-rank, using singular value decomposition (SVD) to impute counterfactuals for treated observations (Athey et al. 2021).
-
-- Synthetic Difference-in-Differences (SDID): Constructs synthetic controls using pre-period matching, combining unit weights (to match treated units' pre-period means) with time weights (to emphasize recent pre-periods), then applies a DiD-style contrast (Arkhangelsky et al. 2021).
-
-- Triply Robust Panel Estimator (TROP): Combines unit weights, time weights, and regression adjustment. Consistent if any one of three conditions holds: unit weights balance loadings, time weights balance factors, or the regression adjustment is correctly specified (Athey et al. 2025).
-
 # Methods
 
-A spatial panel of $N = 56$ grid cells (1° × 1° resolution) in the Central Mediterranean is simulated, observed monthly from April 2015 to February 2018 ($T = 35$). The treatment is defined as:
+Recent work proposes estimators that accommodate latent trends. Matrix Completion models the untreated potential outcome matrix $Y(0)$ as low-rank, using singular value decomposition to impute counterfactuals for treated observations (Athey et al. 2021). Synthetic Difference-in-Differences constructs synthetic controls using pre-period matching, combining unit weights to match treated units' pre-period means with time weights to emphasize recent pre-periods, then applies a DiD-style contrast (Arkhangelsky et al. 2021). We compare these two with TWFE. The latter uses a two-way fixed-effects regression with unit-level cluster-robust standard errors. Matrix Completion uses the fect package with nuclear norm regularization and cross-validation for lambda selection, with bootstrap standard errors based on 200 replicates. Synthetic DiD uses the synthdid package with placebo-based standard errors. All estimators target the ATT for the binary outcome $Y^{\text{any}}$, treating it as continuous (i.e., a linear probability model) for comparability.
+
+The three estimators are tested with spatial panel of $N = 56$ grid cells (1° × 1° resolution) in the Central Mediterranean is simulated, observed monthly from April 2015 to February 2018 ($T = 35$). The treatment is defined as:
 $$
 D_{it} = 1\{\text{distance}_i \leq 200\text{ km from Tripoli}\} \times 1\{t \geq \text{May 2017}\}.
 $$
 
-The outcome $Y_{it}^{\text{any}} = 1\{\text{deaths observed in cell } i \text{, month } t > 0\}$ is a binary deadly-event indicator. Deaths are generated hierarchically as (1) Exposure, where migration attempts $M_{it} \sim \text{Poisson}(\mu_{it})$, where $\mu_{it}$ includes seasonality and latent trends; (2) mortality, where each attempt has per-attempt mortality probability $p_{it}$ following a logistic model with interactive fixed effects, and (3) deaths, $\text{Deaths}_{it} \sim \text{Binomial}(M_{it}, p_{it})$.  The DGP is calibrated to match pre-period deadly-event rates (~6.6%) from IOM Missing Migrants data. I vary `factor_strength` (0 = no latent factors, 0.5 = moderate, 0.9 = strong), `loading_correlation` (correlation between loadings and treatment assignment), and the treatment effect size `delta` on the log-odds scale. All estimators target the ATT for the binary outcome $Y^{\text{any}}$, treating it as continuous (linear probability model) for comparability. TWFE uses `feols(Y ~ D | unit_id + time_id)` with cluster-robust SEs. Matrix Completion uses the `fect` package with SVD-based imputation and nuclear norm regularization, with bootstrap SEs. SynthDID uses the `synthdid` package with jackknife SEs for valid inference. TROP uses exponential kernel weights for units and time with low-rank regression adjustment, with bootstrap SEs.
+The outcome $Y_{it}^{\text{any}} = 1\{\text{deaths observed in cell } i \text{, month } t > 0\}$ is a binary deadly-event indicator. The latent index determining the probability of observing any deaths follows a logistic model with interactive fixed effects:
+$$
+\text{logit}(p_{it}) = \alpha_i + \gamma_t + s \cdot \lambda_i' F_t + u_{it} + \delta \cdot D_{it},
+$$
+where $\alpha_i$ are unit effects, $\gamma_t$ captures seasonality and trend, $\lambda_i' F_t$ represents latent factor structure with strength controlled by parameter $s$, and $u_{it}$ is AR(1) serial noise. The DGP is calibrated to match pre-period deadly-event rates (approximately 6.6%) from IOM Missing Migrants data. I vary factor strength $s$ (where 0 means no latent factors, 0.9 represents the baseline, and 2 represents strong factors) and the treatment effect size $\delta$ on the log-odds scale. 
 
 # Simulation Design
 
-Two experiments are conducted:
-
-1. Power analysis: Fix `factor_strength = 0.5` and `loading_correlation = 0.5` (moderate latent trends correlated with treatment) and vary treatment effect $\delta \in \{0, 0.2, 0.4, 0.6, 0.8\}$. Run 200 replications per $\delta$ value.
-
-2. Scenario analysis: Fix $\delta = 0.6$ and vary DGP features (parallel trends, moderate/strong latent trends, underreporting, short-lived effect). Run 100 replications per scenario.
-
-Performance metrics: bias, RMSE, 95% CI coverage (nominal target), and rejection rate (power/size at $\alpha = 0.05$).
+Two experiments are conducted. The power analysis fixes factor strength at $s = 0.9$ (moderate latent trends correlated with treatment) and varies the treatment effect $\delta \in \{0, 0.2, 0.4, 0.6, 0.8\}$, running 200 replications per value. The scenario analysis fixes $\delta = 0.6$ and varies DGP features across five conditions: baseline (realistic calibration), parallel trends world ($s = 0$), strong latent trends ($s = 2$), under-reporting ($q = 0.7$), and short-lived effect (exponential decay with half-life of 2 months). Each scenario runs 100 replications. Performance metrics include bias, RMSE, 95% CI coverage (nominal target 0.95), and rejection rate (power when $\delta > 0$, size when $\delta = 0$, at $\alpha = 0.05$).
 
 # Results
 
-## One-dataset estimation example
-
-@tbl-example-estimates reports estimates on the calibrated DGP for a single simulated dataset (balanced 56×35 panel). This “one draw” is useful to see what an applied analyst would face in practice, but it can be noisy when outcomes are sparse.
-
-```{r}
-#| label: tbl-example-estimates
-#| tbl-cap: 'One-dataset estimates (calibrated DGP; outcome $Y_{it} = 1\{\text{deaths}>0\}$).'
-#| echo: false
-library(tidyverse)
-
-ex <- readr::read_csv("../output/example_estimates.csv", show_col_types = FALSE)
-
-ex %>%
-  select(method, estimate, se, true_att, bias, p_value) %>%
-  mutate(
-    across(c(estimate, se, true_att, bias), ~ round(.x, 3)),
-    p_value = signif(p_value, 3)
-  ) %>%
-  knitr::kable()
-```
-
-In this example: TWFE and Matrix Completion (via `fect`) coincide almost exactly (same point estimate, slightly different SEs). This indicates that the `fect` MC fit is effectively behaving like a two-way fixed effects model in this design (e.g., selecting few/no latent factors), so it should not be interpreted as a meaningfully different estimator here. I could not find evidence that MC is delivering a low-rank robustness correction, but this should be better investigated. TROP is closer to the true ATT in this draw and its confidence interval covers the true effect. SynthDiD is imprecise (large SE) and does not reject in this draw; its point estimate is below the true ATT.
-
-
 ## Power Analysis
 
-@fig-power and @tbl-power-summary summarize Monte Carlo performance across treatment strengths (log-odds shifts) under the calibrated DGP.
+@fig-power and Figure 2 summarize Monte Carlo performance across treatment strengths under the calibrated DGP. The power analysis reveals a critical finding regarding the validity of the inference. At $\delta = 0$ (no true effect), both TWFE and Matrix Completion maintain proper size control, with rejection rates near the nominal 5% level (0% for TWFE, 0.5% for MC). However, SynthDiD exhibits severe size distortion, rejecting the null hypothesis 14.5% of the time when it is true. This indicates that SynthDiD's confidence intervals are systematically too narrow for this sparse binary outcome setting. All three estimators display similar positive bias that increases modestly with effect size, ranging from approximately 0.008 at $\delta = 0$ to 0.017 at $\delta = 0.8$. This upward bias is consistent across methods and reflects the challenges of estimating treatment effects with sparse binary outcomes and latent confounding. 
 
 ```{r}
 #| label: fig-power
 #| fig-cap: "Rejection rates (power/size) across treatment strengths under the calibrated DGP."
 #| echo: false
+#| out-width: "60%"
+#| fig-align: "center"
 knitr::include_graphics("../figures/power_curves.pdf")
 ```
-
-Key takeaways from the calibrated power study include that size control is imperfect for some methods. When $\delta=0$ (no effect), TWFE is close to nominal size, whereas Matrix Completion (via `fect`) and SynthDiD reject too often, indicating inflated Type I error. TROP is closest to nominal size and exhibits the best coverage at $\delta=0$. Matrix Completion (via `fect`) does not improve point-estimation accuracy relative to TWFE in this design. Across values of $\delta$, MC and TWFE display essentially the same average bias and RMSE; differences mainly arise in inference (standard errors, coverage, and power), rather than in point estimates. Overall, the results reflect a bias–variance tradeoff. TROP behaves more conservatively, with higher coverage and lower rejection rates, while SynthDiD is typically less powerful and tends to attenuate estimated effects in this binary-outcome setting.
 
 ```{r}
 #| label: fig-bias
 #| fig-cap: "Bias as a function of treatment strength under the calibrated DGP."
 #| echo: false
+#| out-width: "60%"
+#| fig-align: "center"
 knitr::include_graphics("../figures/bias_curve.pdf")
 ```
 
@@ -172,35 +142,44 @@ knitr::include_graphics("../figures/bias_curve.pdf")
 #| label: fig-coverage
 #| fig-cap: "Coverage of nominal 95% intervals under the calibrated DGP."
 #| echo: false
+#| out-width: "60%"
+#| fig-align: "center"
 knitr::include_graphics("../figures/coverage_curve.pdf")
 ```
 
+The coverage results sharpen the distinction between methods. TWFE and Matrix Completion maintain coverage near or above the nominal 95% level across all effect sizes, with TWFE achieving 100% coverage at $\delta = 0$ and 95.5% at $\delta = 0.8$. Matrix Completion performs comparably, with coverage ranging from 99% to 94.5%. In contrast, SynthDiD severely undercovers throughout, starting at 85.5% when $\delta = 0$ and declining to 73.5% at $\delta = 0.8$. This undercoverage means that SynthDiD's apparent power advantage is illusory: it rejects more often not because it detects true effects more reliably, but because its standard errors are too small. At the largest effect size ($\delta = 0.8$), the true ATT on the probability scale is approximately 0.096. Among methods with valid inference, Matrix Completion achieves 65.5% power while TWFE reaches 58%, neither attaining the conventional 80% threshold. This reflects a fundamental limitation of the design: with 56 spatial units, 35 time periods, and sparse binary outcomes, statistical power is constrained regardless of the estimation approach.
+
 ```{r}
-#| label: tbl-power-summary
-#| tbl-cap: 'Monte Carlo summary at a moderate effect size ($\delta = 0.8$).'
+#| label: tbl-power-summary-all-delta
+#| tbl-cap: 'Monte Carlo summary across all effect sizes ($\\delta$).'
 #| echo: false
+#| out-width: "60%"
+#| fig-align: "center"
 library(tidyverse)
 
 ps <- readr::read_csv("../output/power_summary.csv", show_col_types = FALSE)
 
 ps %>%
-  filter(delta == 0.8) %>%
-  select(method, true_att, mean_estimate, bias, rmse, coverage, rejection_rate) %>%
+  select(delta, method, true_att, mean_estimate, bias, rmse, coverage, rejection_rate) %>%
   mutate(
-    across(c(true_att, mean_estimate, bias, rmse, coverage, rejection_rate), ~ round(.x, 3))
+    across(c(true_att, mean_estimate, bias, rmse, coverage, rejection_rate), ~ round(.x, 3)),
+    delta = round(delta, 3)
   ) %>%
-  arrange(desc(rejection_rate)) %>%
+  arrange(delta, method) %>%
   knitr::kable()
+
 ```
 
 ## Scenario Analysis
 
-The scenario analysis varies the strength of latent trends, measurement error, and whether the treatment effect is transient (May–June only). @tbl-scenario summarizes performance.
+The scenario analysis examines robustness to departures from baseline conditions. @tbl-scenario summarizes performance across five scenarios. Under baseline conditions with realistic calibration, TWFE and Matrix Completion perform similarly, both achieving 99% coverage with power around 40-46%. SynthDiD shows higher apparent power (82%) but only 76% coverage, confirming that its rejection rate reflects inference failure rather than superior detection. When parallel trends hold ($s = 0$), all methods should perform well since the identifying assumption is satisfied. TWFE and MC both achieve 99% coverage. SynthDiD continues to uncover at 81%, suggesting that its inference problems are not driven by latent factor violations but rather by the sparse binary outcome structure.
 
 ```{r}
 #| label: tbl-scenario
 #| tbl-cap: "Scenario analysis (mean performance across simulations)."
 #| echo: false
+#| out-width: "60%"
+#| fig-align: "center"
 library(tidyverse)
 
 sc <- readr::read_csv("../output/scenario_summary.csv", show_col_types = FALSE)
@@ -214,17 +193,13 @@ sc %>%
   knitr::kable()
 ```
 
-The main qualitative patterns are: in persistent-effect scenarios, TWFE and Matrix Completion behave similarly in terms of bias and RMSE, but Matrix Completion tends to undercover more and can appear “more powerful” largely because it reports smaller standard errors. In the short-lived effect scenario, Matrix Completion can break down sharply, with large bias and severe under-coverage, which is consistent with a mismatch between the estimator’s implicit treatment structure and a transient policy shock. In that scenario, TROP and SynthDiD remain much more stable, albeit with lower power. These simulations are designed to be application-motivated rather than “best case” for any method: sparse binary outcomes, interactive fixed effects with loadings correlated with treatment, and a limited number of treated units. The most important empirical takeaway from the current implementation is that Matrix Completion via `fect` is not acting like a distinct low-rank imputation estimator in this design. In both the one-dataset illustration and the Monte Carlo summaries, its point estimates track TWFE extremely closely. When this happens, MC should be interpreted as “TWFE with different uncertainty quantification,” not as a robustness improvement.
+The strong latent trends scenario ($s = 2$) tests robustness to severe violations of parallel trends. Here, Matrix Completion achieves 91% coverage, a meaningful improvement over earlier implementations that used a narrower regularization grid. TWFE maintains 97% coverage, performing well despite the identifying assumption being violated. SynthDiD coverage drops to 73%. The true ATT in this scenario is smaller (0.036) because strong latent factors absorb more of the treatment-correlated variation, leaving less signal attributable to the policy. Under measurement error from under-reporting ($q = 0.7$, meaning 30% of events go unrecorded), Matrix Completion and TWFE both achieve perfect or near-perfect coverage (100% and 100%, respectively) with modest bias around 0.007. SynthDiD undercovers at 79%. The short-lived effect scenario, in which treatment impact decays exponentially with a half-life of 2 months, poses a challenge for all methods. The true ATT shrinks to 0.022 because the effect dissipates before the post-period ends. Power collapses to 2-4% for TWFE and MC, as the diluted signal cannot be reliably distinguished from noise. SynthDiD shows 32% power but with only 82% coverage, meaning approximately half of its rejections may be false positives.
+
+# Discussion
+
+The simulation results yield three principal findings. First, SynthDiD produces invalid inference for sparse binary panel data in this setting. Across all scenarios, its confidence intervals are too narrow, leading to severe undercoverage (73-86%) and inflated rejection rates. SynthDiD constructs unit weights by matching pre-period trajectories, but with a 6.6% event rate, most cell-months have zero deaths, making pre-period means noisy and discrete rather than smooth. The placebo standard error method assumes that the distribution of placebo effects (computed by treating each control unit as if it were treated) approximates the true sampling distribution of the estimator. It might be that with sparse binary data, this assumption breaks down: placebo effects might concentrate near zero with occasional spikes, producing SE estimates that are systematically too small. Notably, SynthDiD undercovers even when parallel trends hold (81% coverage in the s=0 scenario), confirming that the problem is not about identifying assumptions but about inference calibration for rare-event data. The method was developed for continuous, well-behaved outcomes, and the implicit regularity conditions underlying its asymptotic theory appear to fail when outcomes are sparse and binary. Bootstrap standard errors, which directly estimate the sampling distribution through resampling, may restore valid coverage, though this remains to be tested. Second, Matrix Completion and TWFE perform comparably in this design. Point estimates are nearly identical across methods, and both maintain valid coverage. Matrix Completion shows modest advantages in specific scenarios: slightly higher power under baseline conditions and better robustness to under-reporting. However, these differences are small relative to sampling variability. The finding that MC tracks TWFE so closely suggests that the nuclear norm regularization is not selecting substantial low-rank structure beyond what two-way fixed effects already capture. Third, the study is fundamentally underpowered. Even at the largest effect size examined, power reaches only 58-66% for methods with valid inference. This limitation arises from the combination of a few spatial units (N=56), a moderate time span (T=35), and sparse binary outcomes (6.6% pre-period event rate). No estimation method can overcome insufficient statistical information.
 
 # Future Directions
 
-Several extensions merit investigation:
-
-1. SDID for discrete outcomes: Develop variants of SDID with link functions (logit, Poisson) appropriate for binary or count data, or test performance with continuous transformations like $Y_{\text{ihs}}$.
-
-2. Heterogeneous treatment effects: Current simulations assume constant $\delta$ across treated units. Realistic settings often exhibit effect heterogeneity by distance or time.
-
-3. Optimal rank selection: Investigate data-driven methods for choosing the number of latent factors in MC and TROP (e.g., cross-validation, information criteria).
-
-4. Inference under interference: Spatial settings may exhibit spillover effects between adjacent cells, violating SUTVA.
+Several extensions merit investigation. The SynthDiD inference failure warrants deeper examination. Alternative standard error methods, such as conformal inference or different bootstrap schemes, may restore valid coverage for binary outcomes. Additionally, the `synthdid` package was designed for continuous outcomes, and developing variants with appropriate link functions could improve performance. The similarity between MC and TWFE in this setting raises questions about when matrix completion provides meaningful robustness gains. Designs with stronger factor structure, more units, or continuous outcomes may show greater differentiation. Cross-validation diagnostics for rank selection could help identify when low-rank imputation is actively improving estimation. Finally, extending the analysis to heterogeneous treatment effects would increase realism. The current simulations assume constant $\delta$ across treated units, but effects may plausibly vary with distance from Libya or time since policy implementation. It would also be valuable to check whether the results change with more statistical information. However, these are outside of the scope of this project.
 
