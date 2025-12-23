@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Giorgio Coppola">
-<meta name="dcterms.date" content="2025-12-22">
+<meta name="dcterms.date" content="2025-12-23">
 
 <title>Panel Counterfactual Estimators for Policy Shocks under Latent Trends</title>
 <style>
@@ -2340,7 +2340,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">December 22, 2025</p>
+        <p class="date">December 23, 2025</p>
       </div>
     </div>
     
@@ -2389,7 +2389,7 @@ Y_{it} = Y_{it}(0) + D_{it} \cdot \tau_{it}, \quad \text{where } \tau_{it} = Y_{
 <p>In a canonical 2×2 DiD design, treatment turns on for a subset of units after period <span class="math inline">T_0</span>. TWFE estimates the average treatment effect on the treated (ATT) by regressing: <span class="math display">
 Y_{it} = \alpha_i + \lambda_t + \delta D_{it} + \varepsilon_{it},
 </span> where <span class="math inline">\alpha_i</span> and <span class="math inline">\lambda_t</span> are unit and time fixed effects. This is unbiased for ATT if parallel trends holds: <span class="math inline">E[Y_{it}(0) | i \in \text{treated}] - E[Y_{it}(0) | i \in \text{control}] = c</span> (constant over time).</p>
-<p>Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model (Bai 2009): <span class="math display">
+<p>Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model <span class="citation" data-cites="bai2009panel">(<a href="#ref-bai2009panel" role="doc-biblioref">Bai 2009</a>)</span>: <span class="math display">
 Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i&#39; F_t + \varepsilon_{it},
 </span> where <span class="math inline">\lambda_i \in \mathbb{R}^K</span> are unit-specific loadings and <span class="math inline">F_t \in \mathbb{R}^K</span> are common time factors. Critically, TWFE is biased when factor loadings <span class="math inline">\lambda_i</span> are correlated with treatment assignment, that is, when treated units have systematically different loadings than control units, creating differential trends.</p>
 </section>
@@ -2841,13 +2841,16 @@ Table 2: Scenario analysis (mean performance across simulations).
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">8 References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-arkhangelsky2021synthetic" class="csl-entry" role="listitem">
-Arkhangelsky, Dmitry, Susan Athey, David A Hirshberg, Guido W Imbens, and Stefan Wager. 2021. <span>“Synthetic Difference-in-Differences.”</span> <em>American Economic Review</em> 111 (12): 4088–118.
+Arkhangelsky, Dmitry, Susan Athey, David A Hirshberg, Guido W Imbens, and Stefan Wager. 2021. <span>“Synthetic Difference-in-Differences.”</span> <em>American Economic Review</em> 111 (12): 4088–118. https://doi.org/<a href="https://doi.org/10.1257/aer.20190159">https://doi.org/10.1257/aer.20190159</a>.
 </div>
 <div id="ref-athey2021matrix" class="csl-entry" role="listitem">
-Athey, Susan, Mohsen Bayati, Nikolay Doudchenko, Guido Imbens, and Khashayar Khosravi. 2021. <span>“Matrix Completion Methods for Causal Panel Data Models.”</span> <em>Journal of the American Statistical Association</em> 116 (536): 1716–30.
+Athey, Susan, Mohsen Bayati, Nikolay Doudchenko, Guido Imbens, and Khashayar Khosravi. 2021. <span>“Matrix Completion Methods for Causal Panel Data Models.”</span> <em>Journal of the American Statistical Association</em> 116 (536): 1716–30. https://doi.org/<a href="https://doi.org/10.1080/01621459.2021.1891924">https://doi.org/10.1080/01621459.2021.1891924</a>.
+</div>
+<div id="ref-bai2009panel" class="csl-entry" role="listitem">
+Bai, Jushan. 2009. <span>“Panel Data Models with Interactive Fixed Effects.”</span> <em>Econometrica</em> 77 (4): 1229–79. https://doi.org/<a href="https://doi.org/10.3982/ECTA6135">https://doi.org/10.3982/ECTA6135</a>.
 </div>
 <div id="ref-zambiasi2025externalizing" class="csl-entry" role="listitem">
-Zambiasi, Diego, and Emanuele Albarosa. 2025. <span>“Externalizing Rescue Operations at Sea: The Migration Deal Between Italy and Libya.”</span> <em>Journal of Economic Geography</em> 25 (1): 41–58. <a href="https://doi.org/10.1093/jeg/lbae022">https://doi.org/10.1093/jeg/lbae022</a>.
+Zambiasi, Diego, and Emanuele Albarosa. 2025. <span>“Externalizing Rescue Operations at Sea: The Migration Deal Between Italy and Libya.”</span> <em>Journal of Economic Geography</em> 25 (1): 41–58. https://doi.org/<a href="https://doi.org/10.1093/jeg/lbae022">https://doi.org/10.1093/jeg/lbae022</a>.
 </div>
 </div></section></div></main>
 <!-- /main column -->
@@ -3397,7 +3400,7 @@ Zambiasi, Diego, and Emanuele Albarosa. 2025. <span>“Externalizing Rescue Oper
 <span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>where $\alpha_i$ and $\lambda_t$ are unit and time fixed effects. This is unbiased for ATT if parallel trends holds: $E<span class="co">[</span><span class="ot">Y_{it}(0) | i \in \text{treated}</span><span class="co">]</span> - E<span class="co">[</span><span class="ot">Y_{it}(0) | i \in \text{control}</span><span class="co">]</span> = c$ (constant over time).</span>
 <span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model (Bai 2009):</span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model <span class="co">[</span><span class="ot">@bai2009panel</span><span class="co">]</span>:</span>
 <span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i&#39; F_t + \varepsilon_{it},</span>
 <span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>$$</span>

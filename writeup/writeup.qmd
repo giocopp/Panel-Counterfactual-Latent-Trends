@@ -91,7 +91,7 @@ Y_{it} = \alpha_i + \lambda_t + \delta D_{it} + \varepsilon_{it},
 $$
 where $\alpha_i$ and $\lambda_t$ are unit and time fixed effects. This is unbiased for ATT if parallel trends holds: $E[Y_{it}(0) | i \in \text{treated}] - E[Y_{it}(0) | i \in \text{control}] = c$ (constant over time).
 
-Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model (Bai 2009):
+Parallel trends fails when units follow heterogeneous trends. A common generalization is the interactive fixed effects model [@bai2009panel]:
 $$
 Y_{it}(0) = \alpha_i + \lambda_t + \lambda_i' F_t + \varepsilon_{it},
 $$
